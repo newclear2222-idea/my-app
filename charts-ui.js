@@ -211,6 +211,7 @@ function loadCharts(ticker) {
   chartTicker = ticker;
   setStatus(chartsStatusEl, "");
   showPriceChart(ticker);
+  loadTaChart(ticker);
   loadEpsChart(ticker);
 }
 

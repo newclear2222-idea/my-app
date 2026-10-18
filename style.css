@@ -14,6 +14,14 @@
   --over-bg: #fee2e2;
   --na: #616e7c;
   --na-bg: #e4e7eb;
+  /* 차트: 주가는 주황, 이동평균선은 기간 순서대로 같은 파랑의 진하기(짧을수록 연함) — dataviz 검증 통과 */
+  --price-line: #eb6834;
+  --ma5: #86b6ef;
+  --ma20: #5598e7;
+  --ma60: #2a78d6;
+  --ma120: #1c5cab;
+  --ma200: #104281;
+  --band: #8a94a3;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,6 +41,14 @@
     --over-bg: #450a0a;
     --na: #9ca3af;
     --na-bg: #374151;
+    /* 어두운 배경에서는 긴 이동평균일수록 밝게 */
+    --price-line: #d95926;
+    --ma5: #2a78d6;
+    --ma20: #5598e7;
+    --ma60: #86b6ef;
+    --ma120: #b7d3f6;
+    --ma200: #e6f0fd;
+    --band: #9ca3af;
   }
 }
 
@@ -452,6 +468,55 @@ button[hidden] { display: none; }
   text-align: center;
 }
 .chart-tip[hidden] { display: none; }
+
+.ta-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 0.9rem; }
+.ta-group { font-weight: 600; color: var(--muted); font-size: 0.82rem; }
+.ta-controls label.check { display: inline-flex; flex-direction: row; align-items: center; gap: 5px; font-weight: 400; }
+.tip-sw { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--text); }
+.ta-controls .tip-sw { margin-right: 0; }
+.tip-sw.price { background: var(--price-line); }
+.tip-sw.ma5 { background: var(--ma5); }
+.tip-sw.ma20 { background: var(--ma20); }
+.tip-sw.ma60 { background: var(--ma60); }
+.tip-sw.ma120 { background: var(--ma120); }
+.tip-sw.ma200 { background: var(--ma200); }
+.tip-sw.bb { height: 10px; background: var(--band); opacity: 0.45; }
+
+.ta-chart { position: relative; margin-top: 8px; max-width: 960px; }
+.ta-chart:empty { display: none; }
+.ta-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ta-chart .grid { stroke: var(--border); stroke-width: 1; }
+.ta-chart .tick { fill: var(--muted); font-size: 11px; }
+.ta-chart .end-label { fill: var(--muted); font-size: 11px; }
+.ta-chart path { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.ta-chart .price-line { stroke: var(--price-line); stroke-width: 2; }
+.ta-chart .ma-line { stroke-width: 1.5; }
+.ta-chart .ma5 { stroke: var(--ma5); fill: var(--ma5); }
+.ta-chart .ma20 { stroke: var(--ma20); fill: var(--ma20); }
+.ta-chart .ma60 { stroke: var(--ma60); fill: var(--ma60); }
+.ta-chart .ma120 { stroke: var(--ma120); fill: var(--ma120); }
+.ta-chart .ma200 { stroke: var(--ma200); fill: var(--ma200); }
+.ta-chart path.ma-line { fill: none; }
+.ta-chart .end-dot.price { fill: var(--price-line); }
+.ta-chart .end-dot { stroke: var(--card); stroke-width: 2; }
+.ta-chart .bb-area { fill: var(--band); fill-opacity: 0.12; stroke: none; }
+.ta-chart .bb-line { stroke: var(--band); stroke-width: 1; }
+.ta-chart .bb-mid { stroke: var(--band); stroke-width: 1; stroke-opacity: 0.6; }
+.ta-chart .rsi-line { stroke: var(--text); stroke-width: 1.5; }
+.ta-chart .crosshair { stroke: var(--muted); stroke-width: 1; }
+.ta-chart .hover-dot { fill: var(--price-line); stroke: var(--card); stroke-width: 2; }
+.ta-chart .hit { fill: transparent; cursor: crosshair; }
+.ta-tip { text-align: left; }
+.ta-tip .tip-sw { background: currentColor; }
+.ta-tip .tip-sw.price { background: var(--price-line); }
+.ta-tip .tip-sw.ma5 { background: var(--ma5); }
+.ta-tip .tip-sw.ma20 { background: var(--ma20); }
+.ta-tip .tip-sw.ma60 { background: var(--ma60); }
+.ta-tip .tip-sw.ma120 { background: var(--ma120); }
+.ta-tip .tip-sw.ma200 { background: var(--ma200); }
+.ta-tip .tip-sw.bb { background: var(--band); }
+.ta-table { margin-top: 10px; max-width: 960px; }
+.ta-table table { min-width: 0; }
 
 .chart-table { margin-top: 8px; font-size: 0.88rem; }
 .chart-table summary { cursor: pointer; color: var(--primary); }
