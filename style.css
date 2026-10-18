@@ -53,6 +53,8 @@ header, main, footer {
 }
 
 header { padding-top: 32px; }
+.header-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.header-row button { padding: 8px 14px; font-size: 0.95rem; }
 h1 { margin: 0 0 4px; font-size: 1.75rem; }
 h2 { margin: 0 0 16px; font-size: 1.25rem; }
 .subtitle { margin: 0 0 24px; color: var(--muted); }
