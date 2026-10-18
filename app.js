@@ -486,6 +486,7 @@ async function loadTicker() {
       fillField(key, v, API_PROVIDERS[sources[key].provider].label, sources[key].detail);
     }
     setEarningsShares(shares);
+    loadNews(ticker); // 기다리지 않고 따로 불러온다
     for (const f of NOTE_FIELDS) {
       if (values[f] === undefined) {
         setFieldNote(f, "직접 입력 필요", true);

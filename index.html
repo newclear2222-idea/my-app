@@ -163,6 +163,27 @@
       <div id="earnings-results"></div>
     </section>
 
+    <section class="card" id="news-card">
+      <h2>관련 기사 <span class="hint">Finnhub · 무료</span></h2>
+      <p class="note-inline">
+        티커를 불러오면 최근 기사가 함께 나옵니다. 기사는 대부분 영어이며, 제목을 누르면 원문 사이트가 새 창으로 열립니다.
+        실적 관련 기사는 요약을 바로 <strong>실적발표 자료 분석</strong>으로 보낼 수 있습니다.
+      </p>
+      <div class="news-controls">
+        <label class="inline">기간
+          <select id="news-days">
+            <option value="7">최근 7일</option>
+            <option value="14" selected>최근 14일</option>
+            <option value="30">최근 30일</option>
+          </select>
+        </label>
+        <label class="inline check"><input type="checkbox" id="news-earnings-only"> 실적 관련만</label>
+        <button type="button" id="news-load" class="secondary">기사 새로고침</button>
+      </div>
+      <p id="news-status" class="status" role="status"></p>
+      <div id="news-list" class="news-list"></div>
+    </section>
+
     <section id="results" class="card hidden" aria-live="polite">
       <h2 id="results-title">분석 결과</h2>
 
@@ -202,5 +223,6 @@
   <script src="app.js"></script>
   <script src="earnings.js"></script>
   <script src="earnings-ui.js"></script>
+  <script src="news-ui.js"></script>
 </body>
 </html>

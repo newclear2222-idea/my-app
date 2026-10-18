@@ -115,6 +115,34 @@ async function fetchFinnhubTarget(ticker, apiKey, onWait) {
   };
 }
 
+// 한국처럼 UTC보다 빠른 시간대에서도 오늘 기사가 빠지지 않도록 현지 날짜를 쓴다.
+const ymd = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+// 최근 며칠간의 기업 관련 기사. 반환: [{ headline, summary, source, url, time(ms) }] (최신순, 중복 제목 제거)
+async function fetchCompanyNews(ticker, apiKey, days, onWait) {
+  const to = new Date();
+  const from = new Date(to.getTime() - days * 24 * 3600 * 1000);
+  const rows = await finnhubGet("company-news", { symbol: ticker, from: ymd(from), to: ymd(to) }, apiKey, { cache: true, onWait });
+  const seen = new Set();
+  return (Array.isArray(rows) ? rows : [])
+    .filter((r) => r && typeof r.headline === "string" && r.headline.trim())
+    .filter((r) => {
+      const key = r.headline.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((r) => ({
+      headline: r.headline.trim(),
+      summary: typeof r.summary === "string" ? r.summary.trim() : "",
+      source: r.source || "",
+      url: typeof r.url === "string" && /^https?:\/\//i.test(r.url) ? r.url : "",
+      time: Number(r.datetime) * 1000,
+    }))
+    .sort((a, b) => b.time - a.time);
+}
+
 function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
