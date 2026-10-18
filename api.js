@@ -73,8 +73,9 @@ function pickNumber(obj, names) {
 const FETCHED_FIELDS = ["price", "eps", "bps", "fcf", "growth", "sectorPer"];
 const FINNHUB_FIELDS = ["price", "eps", "bps", "fcf"];
 
-// 결과: values[필드] = 숫자, sources[필드] = { provider, detail }, warnings = 안내 문구 목록
-async function fetchFundamentals(ticker) {
+// 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록
+// onWait(초): Finnhub 분당 한도 때문에 기다리는 중, onProgress(완료, 전체): 경쟁사 PER 진행 상황
+async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
   const keys = { fmp: ApiKeyStore.get("fmp"), finnhub: ApiKeyStore.get("finnhub") };
   const values = {};
   const sources = {};
@@ -106,10 +107,30 @@ async function fetchFundamentals(ticker) {
   const missingForFinnhub = FINNHUB_FIELDS.filter((f) => values[f] === undefined);
   if (missingForFinnhub.length && keys.finnhub) {
     try {
-      take("finnhub", await fetchFinnhub(ticker, keys.finnhub));
+      take("finnhub", await fetchFinnhub(ticker, keys.finnhub, onWait));
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
       errors.push(e);
+    }
+  }
+
+  // 업종 PER: Finnhub 경쟁사들의 PER(TTM) 중간값. 티커가 확인된 경우에만 부른다.
+  if (values.price !== undefined) {
+    if (!keys.finnhub) {
+      warnings.push("업종 평균 PER: 경쟁사 PER로 계산하려면 Finnhub API 키가 필요합니다. 직접 입력 필요");
+    } else {
+      try {
+        const peers = await fetchPeerMultiples(ticker, keys.finnhub, { onWait, onProgress });
+        if (peers.pe) {
+          values.sectorPer = peers.pe.value;
+          sources.sectorPer = { provider: "finnhub", detail: peers.pe.note, note: peers.pe.note };
+        } else {
+          warnings.push(`업종 평균 PER: ${peers.reason} 직접 입력 필요`);
+        }
+      } catch (e) {
+        if (!(e instanceof ApiError)) throw e;
+        warnings.push(`업종 평균 PER: ${e.message} 직접 입력 필요`);
+      }
     }
   }
 

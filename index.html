@@ -21,7 +21,7 @@
       </p>
       <div class="key-block" data-provider="fmp">
         <h3><a href="https://site.financialmodelingprep.com/developer/docs" target="_blank" rel="noopener">FMP</a>
-          <span class="hint">주가·EPS·BPS·FCF·성장률·업종 PER</span></h3>
+          <span class="hint">주가·EPS·BPS·FCF·성장률</span></h3>
         <div class="key-row">
           <input type="password" class="key-input" placeholder="FMP API 키 붙여넣기" autocomplete="off" spellcheck="false" aria-label="FMP API 키">
           <button type="button" class="key-toggle secondary">보기</button>
@@ -32,7 +32,7 @@
       </div>
       <div class="key-block" data-provider="finnhub">
         <h3><a href="https://finnhub.io/register" target="_blank" rel="noopener">Finnhub</a>
-          <span class="hint">주가·EPS·BPS·FCF (FMP 보완용)</span></h3>
+          <span class="hint">주가·EPS·BPS·FCF (FMP 보완), 경쟁사 기준 업종 PER</span></h3>
         <div class="key-row">
           <input type="password" class="key-input" placeholder="Finnhub API 키 붙여넣기" autocomplete="off" spellcheck="false" aria-label="Finnhub API 키">
           <button type="button" class="key-toggle secondary">보기</button>
@@ -78,6 +78,7 @@
           </label>
           <label>업종 평균 PER (배)
             <input type="number" id="sector-per" step="any" placeholder="예: 25" required>
+            <span class="peer-note" id="sector-per-note"></span>
           </label>
         </div>
         <p id="error" class="error" role="alert"></p>

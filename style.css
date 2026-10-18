@@ -161,6 +161,10 @@ button:disabled { opacity: 0.6; cursor: wait; }
 }
 .src-tag:empty { display: none; }
 
+.peer-note { font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+.peer-note:empty { display: none; }
+.peer-note.missing { color: var(--over); font-weight: 600; }
+
 input.autofilled {
   border: 2px solid var(--primary);
   padding: 9px 11px;
@@ -222,6 +226,7 @@ input.autofilled {
   border-radius: 6px;
   margin: 0 0 8px;
   word-break: break-word;
+  white-space: pre-line;
 }
 .method .explain { margin: 0; color: var(--muted); font-size: 0.9rem; }
 

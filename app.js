@@ -137,13 +137,15 @@ function render(i) {
   const methodsEl = document.getElementById("methods");
   methodsEl.innerHTML = "";
 
+  const peerNote = peerNoteEl.classList.contains("missing") ? "" : peerNoteEl.textContent;
+
   for (const m of priceMethods) {
     const ok = m.r.value !== null && Number.isFinite(m.r.value);
     methodsEl.appendChild(methodCard({
       title: m.title,
       valueText: ok ? fmtUSD(m.r.value) : "계산 불가",
       gapHtml: ok ? gapBadge(m.r.value, i.price) : `<span class="badge na">N/A</span> ${m.r.reason ?? ""}`,
-      formula: m.r.formula,
+      formula: m.key === "per" && peerNote ? `${m.r.formula}\n${peerNote}` : m.r.formula,
       explain: EXPLAIN[m.key],
     }));
   }
@@ -233,15 +235,33 @@ for (const id of Object.values(FIELD_IDS)) {
   wrap.append(input, tag);
 }
 
+const peerNoteEl = document.getElementById("sector-per-note");
+
+function setPeerNote(text, missing = false) {
+  peerNoteEl.textContent = text;
+  peerNoteEl.classList.toggle("missing", missing);
+}
+
 function unmarkAutofill(el) {
   el.classList.remove("autofilled");
   el.removeAttribute("title");
   const tag = document.getElementById(`src-${el.id}`);
   if (tag) tag.textContent = "";
+  if (el.id === FIELD_IDS.sectorPer) setPeerNote("");
 }
 
 function clearAutofill() {
   for (const el of form.querySelectorAll("input.autofilled")) unmarkAutofill(el);
+}
+
+// 새 티커를 불러오기 전에 이전 종목 값이 남지 않도록 자동 입력 대상 칸을 모두 비운다.
+function clearFetchedFields() {
+  for (const id of Object.values(FIELD_IDS)) {
+    const el = document.getElementById(id);
+    el.value = "";
+    unmarkAutofill(el);
+  }
+  setPeerNote("");
 }
 
 form.addEventListener("reset", () => {
@@ -249,6 +269,7 @@ form.addEventListener("reset", () => {
   resultsEl.classList.add("hidden");
   setStatus(loadStatusEl, "");
   clearAutofill();
+  setPeerNote("");
 });
 
 // 자동으로 채운 칸을 직접 고치면 표시를 없앤다.
@@ -263,6 +284,7 @@ document.getElementById("sample").addEventListener("click", () => {
   };
   for (const [id, v] of Object.entries(sample)) document.getElementById(id).value = v;
   clearAutofill();
+  setPeerNote("");
   errorEl.textContent = "";
 });
 
@@ -332,10 +354,17 @@ async function loadTicker() {
 
   loadBtn.disabled = true;
   loadBtn.textContent = "불러오는 중…";
-  setStatus(loadStatusEl, `${ticker} 데이터를 불러오는 중입니다…`);
+  clearFetchedFields();
+  errorEl.textContent = "";
+  resultsEl.classList.add("hidden");
+  const loadingText = `${ticker} 데이터를 불러오는 중입니다…`;
+  setStatus(loadStatusEl, loadingText);
+  const onWait = (sec) =>
+    setStatus(loadStatusEl, `Finnhub 분당 호출 한도(60회)를 넘지 않도록 ${sec}초 기다리는 중입니다…`, "warn");
+  const onProgress = (done, total) =>
+    setStatus(loadStatusEl, `${ticker} 경쟁사 PER 불러오는 중… (${done}/${total})`);
   try {
-    const { values, sources, warnings } = await fetchFundamentals(ticker);
-    clearAutofill();
+    const { values, sources, warnings } = await fetchFundamentals(ticker, { onWait, onProgress });
     for (const [key, v] of Object.entries(values)) {
       const el = document.getElementById(FIELD_IDS[key]);
       const src = sources[key];
@@ -344,6 +373,11 @@ async function loadTicker() {
       el.classList.add("autofilled");
       el.title = `자동 입력 (${label}): ${src.detail}`;
       document.getElementById(`src-${el.id}`).textContent = `[${label}]`;
+    }
+    if (values.sectorPer !== undefined) {
+      setPeerNote(sources.sectorPer.note || "");
+    } else {
+      setPeerNote("직접 입력 필요", true);
     }
     const filled = Object.keys(values).length;
     let text = `${ticker}: ${filled}개 항목을 채웠습니다. 칸에 마우스를 올리면 자세한 출처가 보입니다.`;
