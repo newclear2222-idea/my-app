@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시장 지표 심볼 확인</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .check-tile { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; min-width: 0; }
+    .check-tile code { font-size: 0.8rem; }
+    .check-tile .market-widget { margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>시장 지표 심볼 확인</h1>
+    <p class="subtitle">
+      맨 위 시장 지표에 쓰는 심볼(과 비교용 원래 지수)을 한 번에 띄웁니다. 10초쯤 기다린 뒤
+      숫자와 차트가 나오면 <strong>표시 가능</strong>, "이 심볼은 트레이딩뷰에서만 쓸 수 있습니다"가 나오면 <strong>표시 불가</strong>입니다.
+    </p>
+    <p><a href="index.html">← 사이트로 돌아가기</a></p>
+  </header>
+  <main>
+    <div class="check-grid" id="check-grid"></div>
+  </main>
+  <script>
+    // [심볼, 설명, 사이트에서 쓰는지]
+    const CHECKS = [
+      ["FOREXCOM:NSXUSD", "나스닥100 CFD (나스닥 1순위)", true],
+      ["NASDAQ:QQQ", "나스닥100 ETF (나스닥 2순위)", true],
+      ["FOREXCOM:SPXUSD", "S&P 500 CFD (S&P 500 1순위)", true],
+      ["AMEX:SPY", "S&P 500 ETF (S&P 500 2순위)", true],
+      ["AMEX:EWY", "한국 주식 ETF (코스피 대체)", true],
+      ["FX_IDC:USDKRW", "원/달러 (1순위)", true],
+      ["FX:USDKRW", "원/달러 (2순위)", true],
+      ["TVC:USOIL", "WTI CFD (1순위)", true],
+      ["NYMEX:CL1!", "WTI 선물 (2순위)", true],
+      ["NASDAQ:IXIC", "비교용: 나스닥 종합지수 원본 (표시 불가 예상)", false],
+      ["KRX:KOSPI", "비교용: 코스피 원본 (표시 불가 예상)", false],
+    ];
+    const dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const grid = document.getElementById("check-grid");
+    for (const [symbol, label, used] of CHECKS) {
+      const tile = document.createElement("article");
+      tile.className = "check-tile";
+      tile.innerHTML = '<strong></strong><br><code></code><span class="hint"></span>';
+      tile.querySelector("strong").textContent = label;
+      tile.querySelector("code").textContent = symbol;
+      tile.querySelector(".hint").textContent = used ? " · 사이트에서 사용" : " · 사용 안 함";
+      const box = document.createElement("div");
+      box.className = "tradingview-widget-container market-widget";
+      const inner = document.createElement("div");
+      inner.className = "tradingview-widget-container__widget";
+      const script = document.createElement("script");
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js";
+      script.async = true;
+      script.textContent = JSON.stringify({
+        symbol, width: "100%", height: 170, locale: "kr", dateRange: "1M",
+        colorTheme: dark ? "dark" : "light", isTransparent: true, autosize: false,
+      });
+      box.append(inner, script);
+      tile.appendChild(box);
+      grid.appendChild(tile);
+    }
+  </script>
+</body>
+</html>
