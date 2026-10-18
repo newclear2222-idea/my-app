@@ -8,21 +8,25 @@
 
 ## 데이터 자동 불러오기 (선택)
 
-1. [Financial Modeling Prep](https://site.financialmodelingprep.com/developer/docs)에서 무료 API 키를 발급받습니다.
-2. 사이트의 **API 키 설정**에 키를 붙여넣고 **저장**을 누릅니다.
+1. 무료 API 키를 발급받습니다. 둘 중 하나만 있어도 되고, 둘 다 넣으면 가장 많이 채워집니다.
+   - [Financial Modeling Prep (FMP)](https://site.financialmodelingprep.com/developer/docs)
+   - [Finnhub](https://finnhub.io/register)
+2. 사이트의 **API 키 설정**에서 각 키를 붙여넣고 **저장**을 누릅니다.
    키는 이 브라우저의 localStorage에만 저장되며 코드나 GitHub에는 들어가지 않습니다.
 3. 티커(예: AAPL)를 입력하고 **불러오기**를 누르면(또는 Enter) 입력칸이 채워집니다.
-   자동으로 채운 칸은 파란 테두리로 표시되며, 직접 수정할 수 있습니다.
+   자동으로 채운 칸은 파란 테두리와 [FMP] / [Finnhub] 출처 표시가 붙으며, 직접 수정할 수 있습니다.
 
-| 입력칸 | 가져오는 곳 |
-| --- | --- |
-| 현재 주가 | `quote` |
-| EPS, BPS, 주당 FCF | `ratios-ttm` (최근 12개월) |
-| 예상 성장률 | `analyst-estimates` 연간 EPS 추정치로 계산한 최대 5년 연평균 성장률 |
-| 업종 평균 PER | `profile`의 업종/섹터 → `industry-pe-snapshot`, 없으면 `sector-pe-snapshot` |
+불러오기 순서: **FMP 먼저 시도 → 막히거나 비어 있는 항목은 Finnhub로 채우기**
 
-- 한 번 불러올 때 API를 약 5~10회 호출합니다. (무료 플랜은 하루 호출 수 제한이 있습니다)
-- 무료 플랜에서 제공되지 않는 항목은 비워 두고 안내 메시지를 보여주므로 직접 입력하면 됩니다.
+| 입력칸 | FMP | Finnhub (보완) |
+| --- | --- | --- |
+| 현재 주가 | `quote` | `quote` |
+| EPS, BPS, 주당 FCF | `ratios-ttm` (최근 12개월) | `stock/metric` (EPS TTM, 분기 BPS, 주당 FCF TTM) |
+| 예상 성장률 | `analyst-estimates` 연간 EPS 추정치로 계산한 최대 5년 연평균 성장률 | - |
+| 업종 평균 PER | `industry-pe-snapshot`, 없으면 `sector-pe-snapshot` | - |
+
+- 한 번 불러올 때 FMP는 약 5~10회, Finnhub는 2회 호출합니다. (무료 플랜은 호출 수 제한이 있습니다)
+- 어느 쪽에서도 못 가져온 항목은 안내 메시지를 보여주므로 직접 입력하면 됩니다.
 
 ## 계산 방법
 
