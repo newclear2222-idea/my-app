@@ -16,15 +16,10 @@ function fmpGet(path, params, apiKey) {
   return apiGet("fmp", url, fmpClassify);
 }
 
-// 선행 PER용: 오늘 이후 가장 먼저 끝나는 회계연도(내년)의 애널리스트 평균 EPS 추정치
-function forwardEpsFromEstimates(estimates) {
-  if (!Array.isArray(estimates)) return null;
-  const now = Date.now();
-  const next = estimates
-    .map((e) => ({ time: new Date(e.date).getTime(), date: e.date, eps: e.epsAvg }))
-    .filter((e) => Number.isFinite(e.time) && e.time > now && typeof e.eps === "number" && Number.isFinite(e.eps))
-    .sort((a, b) => a.time - b.time)[0];
-  return next ? { eps: next.eps, date: String(next.date).slice(0, 10) } : null;
+// 선행 PER용으로 FMP 연간 추정치를 공통 형식 [{ date, eps, analysts }]으로 바꾼다.
+function fmpEstimateRows(estimates) {
+  if (!Array.isArray(estimates)) return [];
+  return estimates.map((e) => ({ date: e.date, eps: e.epsAvg, analysts: e.numAnalystsEps }));
 }
 
 // 애널리스트 연간 EPS 추정치로 최대 5년 연평균 성장률(CAGR, %)을 구한다.

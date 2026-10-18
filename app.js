@@ -290,17 +290,21 @@ function updatePerPanel() {
   }
 
   let forward = null;
-  if (!forwardEstimate) {
-    setPerStat("per-forward", "-", "불러오기로 애널리스트 예상 EPS(FMP)를 가져오면 표시됩니다.");
-  } else if (forwardEstimate.eps <= 0) {
-    setPerStat("per-forward", "예상 적자로 계산 불가",
-      `예상 EPS ${fmtUSD(forwardEstimate.eps)} (${forwardEstimate.date} 회계연도)`, true);
+  const fe = forwardEstimate;
+  const feInfo = fe
+    ? `${fe.date.slice(0, 4)}년 ${fe.date.slice(5, 7)}월 결산 회계연도` +
+      (fe.analysts ? `, 애널리스트 ${Math.round(fe.analysts)}명 평균` : "") +
+      ` [${API_PROVIDERS[fe.provider].label}]`
+    : "";
+  if (!fe) {
+    setPerStat("per-forward", "-", "불러오기로 애널리스트 예상 EPS(FMP 또는 Alpha Vantage)를 가져오면 표시됩니다.");
+  } else if (fe.eps <= 0) {
+    setPerStat("per-forward", "예상 적자로 계산 불가", `예상 EPS ${fmtUSD(fe.eps)} (${feInfo})`, true);
   } else if (!hasPrice) {
     setPerStat("per-forward", "-", "주가를 입력하면 계산됩니다.");
   } else {
-    forward = price / forwardEstimate.eps;
-    setPerStat("per-forward", `${forward.toFixed(1)}배`,
-      `${fmtUSD(price)} ÷ 예상 EPS ${fmtUSD(forwardEstimate.eps)} (${forwardEstimate.date} 회계연도) [${API_PROVIDERS[forwardEstimate.provider].label}]`);
+    forward = price / fe.eps;
+    setPerStat("per-forward", `${forward.toFixed(1)}배`, `${fmtUSD(price)} ÷ 예상 EPS ${fmtUSD(fe.eps)} (${feInfo})`);
   }
 
   const hasSector = Number.isFinite(sectorPer) && sectorPer > 0;
@@ -435,7 +439,7 @@ async function loadTicker() {
     setStatus(loadStatusEl, `${ticker} 경쟁사 PER 불러오는 중… (${done}/${total})`);
   try {
     const { values, sources, warnings, forward } = await fetchFundamentals(ticker, { onWait, onProgress });
-    forwardEstimate = forward ? { ...forward, provider: "fmp" } : null;
+    forwardEstimate = forward;
     for (const [key, v] of Object.entries(values)) {
       const el = document.getElementById(FIELD_IDS[key]);
       const src = sources[key];

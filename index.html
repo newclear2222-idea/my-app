@@ -17,7 +17,8 @@
       <h2>API 키 설정</h2>
       <p class="note-inline">
         무료 API 키를 발급받아 입력하세요. 키는 <strong>이 브라우저(localStorage)에만</strong> 저장되며 어디에도 업로드되지 않습니다.
-        불러오기는 FMP를 먼저 시도하고, 막히거나 비어 있는 항목은 Finnhub로 채웁니다. 둘 중 하나만 있어도 됩니다.
+        불러오기는 FMP를 먼저 시도하고, 막히거나 비어 있는 항목은 Finnhub로 채웁니다. FMP와 Finnhub 중 하나만 있어도 됩니다.
+        Alpha Vantage는 선행 PER에 쓰는 내년 예상 EPS를 보완합니다(선택).
       </p>
       <div class="key-block" data-provider="fmp">
         <h3><a href="https://site.financialmodelingprep.com/developer/docs" target="_blank" rel="noopener">FMP</a>
@@ -35,6 +36,17 @@
           <span class="hint">주가·EPS·BPS·FCF (FMP 보완), 경쟁사 기준 업종 PER</span></h3>
         <div class="key-row">
           <input type="password" class="key-input" placeholder="Finnhub API 키 붙여넣기" autocomplete="off" spellcheck="false" aria-label="Finnhub API 키">
+          <button type="button" class="key-toggle secondary">보기</button>
+          <button type="button" class="key-save">저장</button>
+          <button type="button" class="key-clear secondary">삭제</button>
+        </div>
+        <p class="key-status status"></p>
+      </div>
+      <div class="key-block" data-provider="alphavantage">
+        <h3><a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener">Alpha Vantage</a>
+          <span class="hint">애널리스트 컨센서스 내년 예상 EPS (FMP 보완, 무료 하루 25회)</span></h3>
+        <div class="key-row">
+          <input type="password" class="key-input" placeholder="Alpha Vantage API 키 붙여넣기" autocomplete="off" spellcheck="false" aria-label="Alpha Vantage API 키">
           <button type="button" class="key-toggle secondary">보기</button>
           <button type="button" class="key-save">저장</button>
           <button type="button" class="key-clear secondary">삭제</button>
@@ -145,6 +157,7 @@
   <script src="api.js"></script>
   <script src="fmp.js"></script>
   <script src="finnhub.js"></script>
+  <script src="alphavantage.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@
 const API_PROVIDERS = {
   fmp: { label: "FMP", storageKey: "fmpApiKey" },
   finnhub: { label: "Finnhub", storageKey: "finnhubApiKey" },
+  alphavantage: { label: "Alpha Vantage", storageKey: "alphaVantageApiKey" },
 };
 
 const ApiKeyStore = {
@@ -30,9 +31,10 @@ function apiMessage(provider, code) {
   const name = API_PROVIDERS[provider].label;
   const messages = {
     key: `${name} API 키가 올바르지 않습니다. 'API 키 설정'에서 키를 다시 확인해 주세요.`,
-    limit: provider === "finnhub"
-      ? "Finnhub 무료 플랜의 호출 한도(분당 60회)를 넘었습니다. 1분쯤 뒤에 다시 시도해 주세요."
-      : "FMP 무료 플랜의 API 호출 한도를 넘었습니다. 잠시 후(또는 내일) 다시 시도하거나 값을 직접 입력해 주세요.",
+    limit: {
+      finnhub: "Finnhub 무료 플랜의 호출 한도(분당 60회)를 넘었습니다. 1분쯤 뒤에 다시 시도해 주세요.",
+      alphavantage: "Alpha Vantage 무료 플랜의 호출 한도(하루 25회)를 넘었습니다. 내일 다시 시도해 주세요.",
+    }[provider] || "FMP 무료 플랜의 API 호출 한도를 넘었습니다. 잠시 후(또는 내일) 다시 시도하거나 값을 직접 입력해 주세요.",
     premium: `이 데이터(또는 종목)는 ${name} 무료 플랜에서 제공되지 않습니다.`,
     network: `${name} 서버에 연결하지 못했습니다. 인터넷 연결을 확인하거나 광고 차단 확장 프로그램을 잠시 꺼 보세요.`,
     notfound: `${name}에서 이 티커를 찾을 수 없습니다.`,
@@ -52,7 +54,7 @@ async function apiGet(provider, url, classify) {
   let body = null;
   try { body = await res.json(); } catch { /* JSON이 아닌 응답 */ }
   const msg = body && !Array.isArray(body)
-    ? String(body["Error Message"] || body.error || body.message || "")
+    ? String(body["Error Message"] || body.error || body.message || body.Information || body.Note || "")
     : "";
   const code = classify(res, msg) || ((!res.ok || msg || body === null) ? "unknown" : null);
   if (code) throw new ApiError(provider, code, apiMessage(provider, code));
@@ -70,11 +72,31 @@ function pickNumber(obj, names) {
   return null;
 }
 
-const FETCHED_FIELDS = ["price", "eps", "bps", "fcf", "growth", "sectorPer"];
+const YEAR_MS = 365.25 * 24 * 3600 * 1000;
+
+// 선행 PER용 "내년 예상 EPS": 회계연도 추정치 중 결산일이 지금부터 12개월 뒤에 가장 가까운 것.
+// (예: 10월 기준 12월 결산 회사는 두 달 남은 올해가 아니라 내년 회계연도를 고른다.)
+// rows: [{ date, eps, analysts? }]
+function pickForwardEstimate(rows) {
+  if (!Array.isArray(rows)) return null;
+  const target = Date.now() + YEAR_MS;
+  const best = rows
+    .map((r) => ({ ...r, time: new Date(r.date).getTime() }))
+    .filter((r) => Number.isFinite(r.time) && r.time > Date.now() && Number.isFinite(r.eps))
+    .sort((a, b) => Math.abs(a.time - target) - Math.abs(b.time - target))[0];
+  if (!best) return null;
+  return {
+    eps: best.eps,
+    date: String(best.date).slice(0, 10),
+    analysts: Number.isFinite(best.analysts) && best.analysts > 0 ? best.analysts : null,
+  };
+}
+
+const FETCHED_FIELDS =["price", "eps", "bps", "fcf", "growth", "sectorPer"];
 const FINNHUB_FIELDS = ["price", "eps", "bps", "fcf"];
 
 // 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록,
-//       forward = 내년 예상 EPS { eps, date } 또는 null (FMP 애널리스트 추정치)
+//       forward = 내년 예상 EPS { eps, date, analysts, provider } 또는 null
 // onWait(초): Finnhub 분당 한도 때문에 기다리는 중, onProgress(완료, 전체): 경쟁사 PER 진행 상황
 async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
   const keys = { fmp: ApiKeyStore.get("fmp"), finnhub: ApiKeyStore.get("finnhub") };
@@ -169,7 +191,28 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
       warnings.push(`${FIELD_NAMES[f]}: 가져오지 못했습니다. 직접 입력해 주세요.`);
     }
   }
-  const forward = forwardEpsFromEstimates(estimates);
+  // 내년 예상 EPS(선행 PER용): FMP 애널리스트 추정치 → 없으면 Alpha Vantage 컨센서스
+  let forward = null;
+  const fmpForward = pickForwardEstimate(fmpEstimateRows(estimates));
+  if (fmpForward) forward = { ...fmpForward, provider: "fmp" };
+  if (!forward && values.price !== undefined) {
+    const avKey = ApiKeyStore.get("alphavantage");
+    if (!avKey) {
+      warnings.push("내년 예상 EPS: Alpha Vantage API 키를 저장하면 애널리스트 컨센서스로 선행 PER을 보여줍니다.");
+    } else {
+      try {
+        const avForward = pickForwardEstimate(await fetchAlphaVantageEstimates(ticker, avKey));
+        if (avForward) {
+          forward = { ...avForward, provider: "alphavantage" };
+        } else {
+          warnings.push("내년 예상 EPS: Alpha Vantage에 이 종목의 애널리스트 추정치가 없습니다.");
+        }
+      } catch (e) {
+        if (!(e instanceof ApiError)) throw e;
+        warnings.push(`내년 예상 EPS: ${e.message}`);
+      }
+    }
+  }
   return { values, sources, warnings, forward };
 }
 

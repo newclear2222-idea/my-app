@@ -8,9 +8,10 @@
 
 ## 데이터 자동 불러오기 (선택)
 
-1. 무료 API 키를 발급받습니다. 둘 중 하나만 있어도 되고, 둘 다 넣으면 가장 많이 채워집니다.
+1. 무료 API 키를 발급받습니다. FMP와 Finnhub 중 하나만 있어도 되고, 모두 넣으면 가장 많이 채워집니다.
    - [Financial Modeling Prep (FMP)](https://site.financialmodelingprep.com/developer/docs)
    - [Finnhub](https://finnhub.io/register)
+   - [Alpha Vantage](https://www.alphavantage.co/support/#api-key) (선택: 선행 PER용 내년 예상 EPS 보완)
 2. 사이트의 **API 키 설정**에서 각 키를 붙여넣고 **저장**을 누릅니다.
    키는 이 브라우저의 localStorage에만 저장되며 코드나 GitHub에는 들어가지 않습니다.
 3. 티커(예: AAPL)를 입력하고 **불러오기**를 누르면(또는 Enter) 입력칸이 채워집니다.
@@ -32,6 +33,16 @@
   Finnhub 무료 플랜(분당 60회)을 넘지 않도록 분당 55회까지만 보내고, 넘을 것 같으면 자동으로 기다립니다.
   같은 회사의 재무 데이터는 10분 동안 다시 부르지 않습니다.
 - 어느 쪽에서도 못 가져온 항목은 안내 메시지를 보여주므로 직접 입력하면 됩니다.
+
+### PER 비교 (현재 PER · 선행 PER · 업종 PER)
+
+- 현재 PER = 현재 주가 ÷ EPS(최근 12개월). EPS가 0 이하면 "적자로 PER 계산 불가".
+- 선행 PER = 현재 주가 ÷ 내년 예상 EPS(애널리스트 평균).
+  - 내년 예상 EPS는 FMP `analyst-estimates`에서 먼저 찾고, 없으면 Alpha Vantage `EARNINGS_ESTIMATES`에서 가져옵니다.
+  - 회계연도 추정치 중 결산일이 지금부터 12개월 뒤에 가장 가까운 것을 씁니다.
+    (예: 10월에 12월 결산 회사를 보면, 두 달 남은 올해가 아니라 내년 회계연도)
+  - Alpha Vantage 무료 플랜은 하루 25회라 FMP에서 못 받은 경우에만 부르고, 같은 종목은 1시간 동안 다시 부르지 않습니다.
+- 주가·EPS·업종 PER을 직접 고치면 바로 다시 계산됩니다.
 
 ## 계산 방법
 
