@@ -143,6 +143,20 @@ async function fetchCompanyNews(ticker, apiKey, days, onWait) {
     .sort((a, b) => b.time - a.time);
 }
 
+// 최근 분기 EPS 실제치와 예상치(컨센서스). 반환: [{ label, period, actual, estimate }] (오래된 분기부터)
+async function fetchEarningsHistory(ticker, apiKey, onWait) {
+  const rows = await finnhubGet("stock/earnings", { symbol: ticker }, apiKey, { cache: true, onWait });
+  return (Array.isArray(rows) ? rows : [])
+    .map((r) => ({
+      period: typeof r.period === "string" ? r.period.slice(0, 10) : "",
+      label: r.year && r.quarter ? `${r.year} ${r.quarter}Q` : String(r.period || "").slice(0, 7),
+      actual: typeof r.actual === "number" && Number.isFinite(r.actual) ? r.actual : null,
+      estimate: typeof r.estimate === "number" && Number.isFinite(r.estimate) ? r.estimate : null,
+    }))
+    .filter((r) => r.period && (r.actual !== null || r.estimate !== null))
+    .sort((a, b) => a.period.localeCompare(b.period));
+}
+
 function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);

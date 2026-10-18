@@ -365,6 +365,52 @@ button[hidden] { display: none; }
 .news-summary:empty { display: none; }
 .news-actions:empty { display: none; }
 
+.chart-title { margin: 20px 0 8px; font-size: 1rem; }
+.tv-chart {
+  height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.chart-empty { padding: 16px; margin: 0; }
+
+.chart-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.85rem; color: var(--muted); }
+.chart-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.key-bar { width: 10px; height: 12px; border-radius: 2px 2px 0 0; background: var(--primary); }
+.key-tick { width: 16px; height: 2px; background: var(--text); }
+
+.eps-chart { position: relative; margin-top: 8px; max-width: 640px; }
+.eps-chart:empty { display: none; }
+.eps-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.eps-chart .grid { stroke: var(--border); stroke-width: 1; }
+.eps-chart .axis-zero { stroke: var(--muted); stroke-width: 1; }
+.eps-chart .tick { fill: var(--muted); font-size: 12px; }
+.eps-chart .cap { fill: var(--text); font-size: 12px; font-weight: 600; }
+.eps-chart .bar { fill: var(--primary); }
+.eps-chart .est { stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+.eps-chart .hit { fill: transparent; cursor: crosshair; }
+.eps-chart .eps-col.active .hit { fill: var(--text); fill-opacity: 0.05; }
+.chart-tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--card);
+  font-size: 0.8rem;
+  pointer-events: none;
+  text-align: center;
+}
+.chart-tip[hidden] { display: none; }
+
+.chart-table { margin-top: 8px; font-size: 0.88rem; }
+.chart-table summary { cursor: pointer; color: var(--primary); }
+.chart-table table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.chart-table th, .chart-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+.chart-table th:first-child, .chart-table td:first-child { text-align: left; }
+
 button.small { padding: 6px 10px; font-size: 0.85rem; }
 button.small:disabled { cursor: not-allowed; }
 
