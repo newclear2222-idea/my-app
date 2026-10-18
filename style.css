@@ -161,6 +161,36 @@ button:disabled { opacity: 0.6; cursor: wait; }
 }
 .src-tag:empty { display: none; }
 
+.per-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.per-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.per-stats > div {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.per-stats .value { font-size: 1.25rem; }
+.per-stats .value.na { font-size: 0.95rem; color: var(--over); }
+.per-sub { font-size: 0.8rem; color: var(--muted); }
+.per-sub:empty { display: none; }
+
+.per-compare { margin: 12px 0 0; font-weight: 600; white-space: pre-line; }
+.per-compare:empty { display: none; }
+
 .peer-note { font-weight: 400; font-size: 0.8rem; color: var(--muted); }
 .peer-note:empty { display: none; }
 .peer-note.missing { color: var(--over); font-weight: 600; }

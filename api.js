@@ -73,7 +73,8 @@ function pickNumber(obj, names) {
 const FETCHED_FIELDS = ["price", "eps", "bps", "fcf", "growth", "sectorPer"];
 const FINNHUB_FIELDS = ["price", "eps", "bps", "fcf"];
 
-// 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록
+// 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록,
+//       forward = 내년 예상 EPS { eps, date } 또는 null (FMP 애널리스트 추정치)
 // onWait(초): Finnhub 분당 한도 때문에 기다리는 중, onProgress(완료, 전체): 경쟁사 PER 진행 상황
 async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
   const keys = { fmp: ApiKeyStore.get("fmp"), finnhub: ApiKeyStore.get("finnhub") };
@@ -168,7 +169,8 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
       warnings.push(`${FIELD_NAMES[f]}: 가져오지 못했습니다. 직접 입력해 주세요.`);
     }
   }
-  return { values, sources, warnings };
+  const forward = forwardEpsFromEstimates(estimates);
+  return { values, sources, warnings, forward };
 }
 
 const FIELD_NAMES = {

@@ -81,6 +81,26 @@
             <span class="peer-note" id="sector-per-note"></span>
           </label>
         </div>
+        <div class="per-panel" aria-live="polite">
+          <div class="per-stats">
+            <div>
+              <span class="label">현재 PER <span class="hint">주가 ÷ EPS(TTM)</span></span>
+              <span class="value" id="per-current">-</span>
+              <span class="per-sub" id="per-current-sub"></span>
+            </div>
+            <div>
+              <span class="label">선행 PER <span class="hint">주가 ÷ 내년 예상 EPS</span></span>
+              <span class="value" id="per-forward">-</span>
+              <span class="per-sub" id="per-forward-sub"></span>
+            </div>
+            <div>
+              <span class="label">업종(경쟁사) PER</span>
+              <span class="value" id="per-sector">-</span>
+              <span class="per-sub" id="per-sector-sub"></span>
+            </div>
+          </div>
+          <p class="per-compare" id="per-compare"></p>
+        </div>
         <p id="error" class="error" role="alert"></p>
         <div class="buttons">
           <button type="submit">적정가 계산</button>

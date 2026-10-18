@@ -7,7 +7,7 @@ const errorEl = document.getElementById("error");
 const resultsEl = document.getElementById("results");
 
 const fmtUSD = (v) =>
-  "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (v) => (v > 0 ? "+" : "") + v.toFixed(1) + "%";
 const fmtNum = (v, d = 2) => v.toLocaleString("en-US", { maximumFractionDigits: d });
 
@@ -254,6 +254,68 @@ function clearAutofill() {
   for (const el of form.querySelectorAll("input.autofilled")) unmarkAutofill(el);
 }
 
+// ----- PER 비교 (현재 PER · 선행 PER · 업종 PER) -----
+// 내년 예상 EPS { eps, date, provider }. 불러온 종목에 딸린 값이라 새로 불러오면 바뀐다.
+let forwardEstimate = null;
+
+function setPerStat(id, text, sub = "", na = false) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.classList.toggle("na", na);
+  document.getElementById(`${id}-sub`).textContent = sub;
+}
+
+function compareText(name, per, sectorPer) {
+  const diff = ((per - sectorPer) / sectorPer) * 100;
+  const rounded = Math.round(Math.abs(diff));
+  const verdict = rounded === 0 ? "업종과 비슷" : `업종보다 ${rounded}% ${diff < 0 ? "낮음" : "높음"}`;
+  return `${name} ${per.toFixed(1)}배 vs 업종 ${sectorPer.toFixed(1)}배 → ${verdict}`;
+}
+
+function updatePerPanel() {
+  const price = readNumber("price");
+  const eps = readNumber("eps");
+  const sectorPer = readNumber("sector-per");
+  const hasPrice = Number.isFinite(price) && price > 0;
+  const lines = [];
+
+  let current = null;
+  if (!hasPrice || !Number.isFinite(eps)) {
+    setPerStat("per-current", "-", "주가와 EPS를 입력하면 계산됩니다.");
+  } else if (eps <= 0) {
+    setPerStat("per-current", "적자로 PER 계산 불가", `EPS ${fmtUSD(eps)}`, true);
+  } else {
+    current = price / eps;
+    setPerStat("per-current", `${current.toFixed(1)}배`, `${fmtUSD(price)} ÷ ${fmtUSD(eps)}`);
+  }
+
+  let forward = null;
+  if (!forwardEstimate) {
+    setPerStat("per-forward", "-", "불러오기로 애널리스트 예상 EPS(FMP)를 가져오면 표시됩니다.");
+  } else if (forwardEstimate.eps <= 0) {
+    setPerStat("per-forward", "예상 적자로 계산 불가",
+      `예상 EPS ${fmtUSD(forwardEstimate.eps)} (${forwardEstimate.date} 회계연도)`, true);
+  } else if (!hasPrice) {
+    setPerStat("per-forward", "-", "주가를 입력하면 계산됩니다.");
+  } else {
+    forward = price / forwardEstimate.eps;
+    setPerStat("per-forward", `${forward.toFixed(1)}배`,
+      `${fmtUSD(price)} ÷ 예상 EPS ${fmtUSD(forwardEstimate.eps)} (${forwardEstimate.date} 회계연도) [${API_PROVIDERS[forwardEstimate.provider].label}]`);
+  }
+
+  const hasSector = Number.isFinite(sectorPer) && sectorPer > 0;
+  if (hasSector) {
+    const peerNote = peerNoteEl.classList.contains("missing") ? "" : peerNoteEl.textContent;
+    setPerStat("per-sector", `${sectorPer.toFixed(1)}배`, peerNote ? peerNote.replace(/^경쟁사 기준: /, "") : "직접 입력한 값");
+  } else {
+    setPerStat("per-sector", "-", "업종 PER을 입력하거나 불러오면 비교합니다.");
+  }
+
+  if (hasSector && current !== null) lines.push(compareText("현재 PER", current, sectorPer));
+  if (hasSector && forward !== null) lines.push(compareText("선행 PER", forward, sectorPer));
+  document.getElementById("per-compare").textContent = lines.join("\n");
+}
+
 // 새 티커를 불러오기 전에 이전 종목 값이 남지 않도록 자동 입력 대상 칸을 모두 비운다.
 function clearFetchedFields() {
   for (const id of Object.values(FIELD_IDS)) {
@@ -262,6 +324,8 @@ function clearFetchedFields() {
     unmarkAutofill(el);
   }
   setPeerNote("");
+  forwardEstimate = null;
+  updatePerPanel();
 }
 
 form.addEventListener("reset", () => {
@@ -270,11 +334,15 @@ form.addEventListener("reset", () => {
   setStatus(loadStatusEl, "");
   clearAutofill();
   setPeerNote("");
+  forwardEstimate = null;
+  // reset 이벤트는 칸이 비워지기 전에 발생하므로 다음 틱에 다시 계산한다.
+  setTimeout(updatePerPanel, 0);
 });
 
-// 자동으로 채운 칸을 직접 고치면 표시를 없앤다.
+// 자동으로 채운 칸을 직접 고치면 표시를 없애고, PER 비교를 바로 다시 계산한다.
 form.addEventListener("input", (e) => {
   if (e.target.classList.contains("autofilled")) unmarkAutofill(e.target);
+  updatePerPanel();
 });
 
 document.getElementById("sample").addEventListener("click", () => {
@@ -285,6 +353,8 @@ document.getElementById("sample").addEventListener("click", () => {
   for (const [id, v] of Object.entries(sample)) document.getElementById(id).value = v;
   clearAutofill();
   setPeerNote("");
+  forwardEstimate = null;
+  updatePerPanel();
   errorEl.textContent = "";
 });
 
@@ -364,7 +434,8 @@ async function loadTicker() {
   const onProgress = (done, total) =>
     setStatus(loadStatusEl, `${ticker} 경쟁사 PER 불러오는 중… (${done}/${total})`);
   try {
-    const { values, sources, warnings } = await fetchFundamentals(ticker, { onWait, onProgress });
+    const { values, sources, warnings, forward } = await fetchFundamentals(ticker, { onWait, onProgress });
+    forwardEstimate = forward ? { ...forward, provider: "fmp" } : null;
     for (const [key, v] of Object.entries(values)) {
       const el = document.getElementById(FIELD_IDS[key]);
       const src = sources[key];
@@ -379,6 +450,7 @@ async function loadTicker() {
     } else {
       setPeerNote("직접 입력 필요", true);
     }
+    updatePerPanel();
     const filled = Object.keys(values).length;
     let text = `${ticker}: ${filled}개 항목을 채웠습니다. 칸에 마우스를 올리면 자세한 출처가 보입니다.`;
     if (warnings.length) text += "\n직접 입력이 필요한 항목:\n· " + warnings.join("\n· ");
@@ -405,3 +477,5 @@ tickerInput.addEventListener("keydown", (e) => {
     loadTicker();
   }
 });
+
+updatePerPanel();
