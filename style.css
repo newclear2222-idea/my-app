@@ -52,7 +52,39 @@ header, main, footer {
   padding: 0 16px;
 }
 
-header { padding-top: 32px; }
+.market { max-width: 1200px; margin: 0 auto; padding: 16px 16px 0; }
+.market-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
+.market-head h2 { margin: 0; font-size: 1rem; }
+.market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) {
+  .market-grid { gap: 8px; }
+  .market-tile { padding: 8px 6px 2px; }
+  .market-tile-head { flex-direction: column; gap: 0; }
+}
+@media (max-width: 340px) { .market-grid { grid-template-columns: 1fr; } }
+.market-tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 10px 4px;
+  min-width: 0;
+}
+.market-tile-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.market-tile-head strong { font-size: 0.92rem; }
+.market-widget { height: 170px; overflow: hidden; }
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+.link-btn:hover { background: none; text-decoration: underline; }
+
+header { padding-top: 24px; }
 .header-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .header-row button { padding: 8px 14px; font-size: 0.95rem; }
 h1 { margin: 0 0 4px; font-size: 1.75rem; }

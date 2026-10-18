@@ -7,6 +7,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <section class="market" aria-label="시장 지표">
+    <div class="market-head">
+      <h2>시장 지표 <span class="hint">TradingView · 무료 · 페이지를 열어 두면 계속 갱신</span></h2>
+      <label class="inline">기간
+        <select id="market-range">
+          <option value="1D">1일</option>
+          <option value="1M" selected>1개월</option>
+          <option value="3M">3개월</option>
+          <option value="12M">1년</option>
+        </select>
+      </label>
+    </div>
+    <div class="market-grid" id="market-grid"></div>
+  </section>
+
   <header>
     <div class="header-row">
       <h1>미국 주식 적정가 분석</h1>
@@ -255,6 +270,7 @@
   <script src="translate.js"></script>
   <script src="news-ui.js"></script>
   <script src="charts-ui.js"></script>
+  <script src="market.js"></script>
   <script src="refresh.js"></script>
 </body>
 </html>
