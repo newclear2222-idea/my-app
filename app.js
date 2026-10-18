@@ -217,11 +217,31 @@ function setStatus(el, text, kind = "") {
   el.className = `status ${kind}`.trim();
 }
 
+const FIELD_IDS = {
+  price: "price", eps: "eps", bps: "bps", fcf: "fcf", growth: "growth", sectorPer: "sector-per",
+};
+
+// 자동 입력 칸마다 출처 표시([FMP] / [Finnhub])를 입력칸 옆에 붙인다.
+for (const id of Object.values(FIELD_IDS)) {
+  const input = document.getElementById(id);
+  const wrap = document.createElement("span");
+  wrap.className = "input-wrap";
+  input.replaceWith(wrap);
+  const tag = document.createElement("span");
+  tag.className = "src-tag";
+  tag.id = `src-${id}`;
+  wrap.append(input, tag);
+}
+
+function unmarkAutofill(el) {
+  el.classList.remove("autofilled");
+  el.removeAttribute("title");
+  const tag = document.getElementById(`src-${el.id}`);
+  if (tag) tag.textContent = "";
+}
+
 function clearAutofill() {
-  for (const el of form.querySelectorAll("input.autofilled")) {
-    el.classList.remove("autofilled");
-    el.removeAttribute("title");
-  }
+  for (const el of form.querySelectorAll("input.autofilled")) unmarkAutofill(el);
 }
 
 form.addEventListener("reset", () => {
@@ -233,10 +253,7 @@ form.addEventListener("reset", () => {
 
 // 자동으로 채운 칸을 직접 고치면 표시를 없앤다.
 form.addEventListener("input", (e) => {
-  if (e.target.classList.contains("autofilled")) {
-    e.target.classList.remove("autofilled");
-    e.target.removeAttribute("title");
-  }
+  if (e.target.classList.contains("autofilled")) unmarkAutofill(e.target);
 });
 
 document.getElementById("sample").addEventListener("click", () => {
@@ -249,51 +266,51 @@ document.getElementById("sample").addEventListener("click", () => {
   errorEl.textContent = "";
 });
 
-// ----- API 키 설정 -----
-const keyInput = document.getElementById("api-key");
-const keyStatusEl = document.getElementById("key-status");
+// ----- API 키 설정 (FMP, Finnhub 각각) -----
+for (const block of document.querySelectorAll(".key-block")) {
+  const provider = block.dataset.provider;
+  const keyInput = block.querySelector(".key-input");
+  const keyStatusEl = block.querySelector(".key-status");
 
-function showKeyStatus() {
-  const key = ApiKeyStore.get();
-  if (key) {
-    setStatus(keyStatusEl, `저장된 키: ••••${key.slice(-4)} (이 브라우저에만 저장됨)`, "ok");
-  } else {
-    setStatus(keyStatusEl, "저장된 키가 없습니다. 키 없이도 값을 직접 입력해 계산할 수 있습니다.", "warn");
-  }
+  const showKeyStatus = () => {
+    const key = ApiKeyStore.get(provider);
+    if (key) {
+      setStatus(keyStatusEl, `저장된 키: ••••${key.slice(-4)} (이 브라우저에만 저장됨)`, "ok");
+    } else {
+      setStatus(keyStatusEl, "저장된 키가 없습니다.", "warn");
+    }
+  };
+
+  block.querySelector(".key-save").addEventListener("click", () => {
+    const key = keyInput.value.trim();
+    if (!key) {
+      setStatus(keyStatusEl, "API 키를 입력해 주세요.", "err");
+      return;
+    }
+    if (!ApiKeyStore.set(provider, key)) {
+      setStatus(keyStatusEl, "브라우저 저장소를 쓸 수 없습니다. 시크릿 창이거나 사이트 데이터 저장이 차단되어 있는지 확인해 주세요.", "err");
+      return;
+    }
+    keyInput.value = "";
+    showKeyStatus();
+  });
+
+  block.querySelector(".key-clear").addEventListener("click", () => {
+    ApiKeyStore.clear(provider);
+    keyInput.value = "";
+    showKeyStatus();
+  });
+
+  block.querySelector(".key-toggle").addEventListener("click", (e) => {
+    const hidden = keyInput.type === "password";
+    keyInput.type = hidden ? "text" : "password";
+    e.target.textContent = hidden ? "숨기기" : "보기";
+  });
+
+  showKeyStatus();
 }
 
-document.getElementById("key-save").addEventListener("click", () => {
-  const key = keyInput.value.trim();
-  if (!key) {
-    setStatus(keyStatusEl, "API 키를 입력해 주세요.", "err");
-    return;
-  }
-  if (!ApiKeyStore.set(key)) {
-    setStatus(keyStatusEl, "브라우저 저장소를 쓸 수 없습니다. 시크릿 창이거나 사이트 데이터 저장이 차단되어 있는지 확인해 주세요.", "err");
-    return;
-  }
-  keyInput.value = "";
-  showKeyStatus();
-});
-
-document.getElementById("key-clear").addEventListener("click", () => {
-  ApiKeyStore.clear();
-  keyInput.value = "";
-  showKeyStatus();
-});
-
-document.getElementById("key-toggle").addEventListener("click", (e) => {
-  const hidden = keyInput.type === "password";
-  keyInput.type = hidden ? "text" : "password";
-  e.target.textContent = hidden ? "숨기기" : "보기";
-});
-
-showKeyStatus();
-
 // ----- 불러오기 -----
-const FIELD_IDS = {
-  price: "price", eps: "eps", bps: "bps", fcf: "fcf", growth: "growth", sectorPer: "sector-per",
-};
 const loadBtn = document.getElementById("load");
 const tickerInput = document.getElementById("ticker");
 
@@ -308,9 +325,8 @@ async function loadTicker() {
     setStatus(loadStatusEl, "티커 형식이 올바르지 않습니다. 영문 티커를 입력해 주세요. (예: AAPL, BRK.B)", "err");
     return;
   }
-  const apiKey = ApiKeyStore.get();
-  if (!apiKey) {
-    setStatus(loadStatusEl, "먼저 위의 'API 키 설정'에서 API 키를 저장해 주세요.", "err");
+  if (!ApiKeyStore.get("fmp") && !ApiKeyStore.get("finnhub")) {
+    setStatus(loadStatusEl, "먼저 위의 'API 키 설정'에서 FMP 또는 Finnhub API 키를 저장해 주세요.", "err");
     return;
   }
 
@@ -318,16 +334,19 @@ async function loadTicker() {
   loadBtn.textContent = "불러오는 중…";
   setStatus(loadStatusEl, `${ticker} 데이터를 불러오는 중입니다…`);
   try {
-    const { values, sources, warnings } = await fetchFundamentals(ticker, apiKey);
+    const { values, sources, warnings } = await fetchFundamentals(ticker);
     clearAutofill();
     for (const [key, v] of Object.entries(values)) {
       const el = document.getElementById(FIELD_IDS[key]);
+      const src = sources[key];
+      const label = API_PROVIDERS[src.provider].label;
       el.value = Math.round(v * 100) / 100;
       el.classList.add("autofilled");
-      el.title = `자동 입력: ${sources[key]}`;
+      el.title = `자동 입력 (${label}): ${src.detail}`;
+      document.getElementById(`src-${el.id}`).textContent = `[${label}]`;
     }
     const filled = Object.keys(values).length;
-    let text = `${ticker}: ${filled}개 항목을 채웠습니다. 칸에 마우스를 올리면 출처가 보입니다.`;
+    let text = `${ticker}: ${filled}개 항목을 채웠습니다. 칸에 마우스를 올리면 자세한 출처가 보입니다.`;
     if (warnings.length) text += "\n직접 입력이 필요한 항목:\n· " + warnings.join("\n· ");
     setStatus(loadStatusEl, text, warnings.length ? "warn" : "ok");
 
@@ -337,7 +356,7 @@ async function loadTicker() {
       render(inputs);
     }
   } catch (e) {
-    const message = e instanceof FmpError ? e.message : FMP_MESSAGES.unknown;
+    const message = e instanceof ApiError ? e.message : "데이터를 가져오는 중 알 수 없는 오류가 발생했습니다.";
     setStatus(loadStatusEl, message, "err");
   } finally {
     loadBtn.disabled = false;

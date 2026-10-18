@@ -123,6 +123,9 @@ a { color: var(--primary); }
 
 .note-inline { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
 
+.key-block + .key-block { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.key-block h3 { margin: 0 0 8px; font-size: 1rem; }
+
 .key-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .key-row input { flex: 1 1 240px; min-width: 0; font-family: Consolas, "Courier New", monospace; }
 
@@ -146,6 +149,17 @@ button:disabled { opacity: 0.6; cursor: wait; }
   border-radius: 3px;
   vertical-align: -1px;
 }
+
+.input-wrap { display: flex; align-items: center; gap: 6px; }
+.input-wrap input { flex: 1; min-width: 0; }
+
+.src-tag {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.src-tag:empty { display: none; }
 
 input.autofilled {
   border: 2px solid var(--primary);
