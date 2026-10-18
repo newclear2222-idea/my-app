@@ -28,7 +28,9 @@ const GUIDANCE_WORDS = ["가이던스", "guidance", "전망", "outlook", "예측
 const GUIDANCE_RE = /(?<!시장\s?)예상(?!치)/;
 const YOY_WORDS = ["전년 대비", "전년대비", "전년 동기", "전년동기", "작년 대비", "yoy", "y/y", "year over year", "year-over-year", "from a year"];
 const QOQ_WORDS = ["전분기", "전 분기", "qoq", "q/q", "sequential", "sequentially"];
-const DOWN_WORDS = ["감소", "하락", "줄", "축소", "decline", "declined", "decrease", "decreased", "down", "fell", "drop", "lower"];
+// 실적(이미 나온 숫자)을 말하는 동사. 한국어는 동사가 문장 끝에 오므로 뒤쪽을 보고 가이던스인지 판단한다.
+const ACTUAL_VERBS = ["기록", "달성", "집계", "발표했", "reported", "posted", "delivered", "achieved", "was", "were", "came in", "totaled", "grew", "rose"];
+const DOWN_WORDS =["감소", "하락", "줄", "축소", "decline", "declined", "decrease", "decreased", "down", "fell", "drop", "lower"];
 
 const KOREAN_SCALE = { 조: 1e12, 억: 1e8, 천만: 1e7, 백만: 1e6, 만: 1e4 };
 const ENGLISH_SCALE = { billion: 1e9, bn: 1e9, b: 1e9, million: 1e6, mn: 1e6, m: 1e6, thousand: 1e3, k: 1e3 };
@@ -62,7 +64,10 @@ function splitSegments(text) {
 
 // "104~110억 달러", "$10.4 to $11.0 billion"처럼 앞 숫자에 단위가 빠진 범위를 "104억 달러 ~ 110억 달러"로 바꾼다.
 function normalizeRanges(s) {
-  return s.replace(
+  return s
+    // "10.50~11.50달러" → "10.50달러 ~ 11.50달러"
+    .replace(/(\d[\d,]*(?:\.\d+)?)\s?([~∼–]|-)\s?(\d[\d,]*(?:\.\d+)?)\s?(달러|불)/g, "$1$4 ~ $3$4")
+    .replace(
     /(\$)?(\d[\d,]*(?:\.\d+)?)\s?([~∼–]|to|-)\s?(\$)?(\d[\d,]*(?:\.\d+)?)\s?(조|억|billion|million|bn|mn|b|m)(?![a-z])/gi,
     (m, c1, a, sep, c2, b, scale) => {
       const cur = c1 || c2 || "";
@@ -157,7 +162,6 @@ function parseEarningsText(text) {
       const winEnd = idx + 1 < hits.length ? hits[idx + 1].start : seg.length;
       const win = seg.slice(hit.end, winEnd);
       const winLower = win.toLowerCase();
-      const ctx = lower.slice(0, winEnd); // 기간·가이던스 단어는 문장 앞부분에 나오는 경우가 많다
       const { metric } = hit;
       const item = { key: metric.key, label: metric.label, kind: metric.kind, value: null, low: null, high: null, percent: null, growthKind: null };
 
@@ -195,8 +199,31 @@ function parseEarningsText(text) {
       }
 
       if (item.value === null && item.percent === null) return;
-      item.period = detectPeriod(winLower) || detectPeriod(ctx) || reportPeriod;
-      item.guidanceSpan = item.period === "guidance" ? guidanceSpan(winLower) || guidanceSpan(ctx) : null;
+      // 기간은 이 숫자가 속한 구절(첫 숫자 뒤 첫 쉼표·세미콜론까지)만 보고 판단한다.
+      // 그래야 "87억 달러를 기록했고, 다음 분기 매출은 79억 달러로 예상"에서 앞 숫자가 가이던스로 잡히지 않는다.
+      const firstNum = Math.min(...[...tokens, ...pcts].map((t) => t.end ?? t.start + 1).concat(win.search(/\d/) + 1 || win.length));
+      const breakAt = win.slice(firstNum).search(/[,;]|\s(?:and|while)\s/i);
+      const clauseEnd = breakAt === -1 ? win.length : firstNum + breakAt;
+      const clauseLower = winLower.slice(0, clauseEnd);
+      const clauseCtx = lower.slice(0, hit.end + clauseEnd);
+      // "…매출은 104~110억 달러로 예상했다"처럼 가이던스 단어가 숫자 뒤에 오는 경우:
+      // 뒤쪽에서 가이던스 단어가 실적 동사보다 먼저 나오면 가이던스로 본다.
+      const rest = lower.slice(hit.end + clauseEnd);
+      const firstIdx = (words, re) => {
+        const idx = words.map((w) => findWord(rest, w)).filter((i) => i !== -1);
+        if (re) { const m = rest.match(re); if (m) idx.push(m.index); }
+        return idx.length ? Math.min(...idx) : -1;
+      };
+      const gIdx = firstIdx(GUIDANCE_WORDS, GUIDANCE_RE);
+      const aIdx = firstIdx(ACTUAL_VERBS);
+      const guidanceAfter = gIdx !== -1 && (aIdx === -1 || gIdx < aIdx);
+      const ownPeriod = detectPeriod(clauseLower) || detectPeriod(clauseCtx);
+      item.period = guidanceAfter && ownPeriod !== "guidance" && !hasAny(clauseLower, ACTUAL_VERBS)
+        ? "guidance"
+        : ownPeriod || reportPeriod;
+      item.guidanceSpan = item.period === "guidance"
+        ? guidanceSpan(clauseLower) || guidanceSpan(clauseCtx) || guidanceSpan(lower)
+        : null;
       item.snippet = rawSeg.length > 180 ? rawSeg.slice(0, 177) + "…" : rawSeg;
       results.push(item);
     });

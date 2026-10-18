@@ -173,6 +173,66 @@ function earningsInsights(cands) {
   return lines;
 }
 
+// 가이던스 값을 같은 지표의 실적·입력값과 비교한 문구
+function guidanceCompare(g, cands) {
+  const actualOf = (pred) => cands.find((c) => c.key === g.key && c.value !== null && isActual(c) && pred(c));
+  if (g.value === null) return "-";
+  if (g.kind === "ratio") {
+    const a = actualOf(() => true);
+    if (!a) return "-";
+    const d = g.value - a.value;
+    return `${periodText(a)} ${fmtNum(a.value, 1)}% 대비 ${d >= 0 ? "+" : ""}${fmtNum(d, 1)}%p`;
+  }
+  if (g.guidanceSpan === "quarter") {
+    const a = actualOf((c) => c.period === "quarter");
+    if (a && a.value !== 0) return `이번 분기 실적 ${g.kind === "perShare" ? fmtUSD(a.value) : fmtBig(a.value)} 대비 ${fmtPct(((g.value - a.value) / Math.abs(a.value)) * 100)}`;
+  }
+  if (g.key === "eps" && g.guidanceSpan === "annual") {
+    const fe = readNumber("forward-eps");
+    if (Number.isFinite(fe) && fe !== 0) return `입력된 내년 예상 EPS ${fmtUSD(fe)} 대비 ${fmtPct(((g.value - fe) / Math.abs(fe)) * 100)}`;
+  }
+  if (g.guidanceSpan === "annual") {
+    const a = actualOf((c) => c.period === "annual" || c.period === "ttm");
+    if (a && a.value !== 0) return `${periodText(a)} ${g.kind === "perShare" ? fmtUSD(a.value) : fmtBig(a.value)} 대비 ${fmtPct(((g.value - a.value) / Math.abs(a.value)) * 100)}`;
+  }
+  return "-";
+}
+
+// 가이던스만 모아 표로 보여준다. 휴대폰에서는 표만 가로로 스크롤된다.
+function guidanceTable(cands) {
+  const rows = cands.filter((c) => c.period === "guidance");
+  if (rows.length === 0) return null;
+  const order = { quarter: 0, annual: 1 };
+  rows.sort((a, b) => (order[a.guidanceSpan] ?? 2) - (order[b.guidanceSpan] ?? 2));
+
+  const box = document.createElement("div");
+  box.className = "guidance";
+  box.innerHTML = `
+    <h3>가이던스 (회사 전망)</h3>
+    <div class="table-scroll"><table>
+      <thead><tr><th>항목</th><th>기간</th><th>가이던스</th><th>범위</th><th>비교</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="hint">중간값 기준이며, 범위가 있으면 하한~상한의 가운데 값입니다. 행에 마우스를 올리면 원문이 보입니다.</p>`;
+  const tbody = box.querySelector("tbody");
+  for (const g of rows) {
+    const fmt = (v) => (g.kind === "perShare" ? fmtUSD(v) : g.kind === "ratio" ? `${fmtNum(v, 1)}%` : fmtBig(v));
+    let main = g.value === null ? "" : fmt(g.value);
+    if (g.percent !== null) main = `${main ? main + " · " : ""}성장률 ${fmtPct(g.percent)}`;
+    const range = g.low !== null && g.high !== null ? `${fmt(g.low)} ~ ${fmt(g.high)}` : "-";
+    const span = { quarter: "다음 분기", annual: "연간" }[g.guidanceSpan] || "기간 불명";
+    const tr = document.createElement("tr");
+    tr.title = g.snippet;
+    for (const text of [g.label, span, main || "-", range, guidanceCompare(g, cands)]) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  return box;
+}
+
 function renderEarnings() {
   if (!earningsCandidates) return;
   earningsResultsEl.innerHTML = "";
@@ -213,6 +273,9 @@ function renderEarnings() {
     }
     list.appendChild(item);
   }
+
+  const guidance = guidanceTable(cands);
+  if (guidance) earningsResultsEl.appendChild(guidance);
 
   const insights = earningsInsights(cands);
   if (insights.length) {
