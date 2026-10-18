@@ -119,6 +119,39 @@ button.secondary:hover { background: var(--bg); }
 
 .error { color: var(--over); margin: 12px 0 0; min-height: 1.2em; }
 
+a { color: var(--primary); }
+
+.note-inline { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
+
+.key-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.key-row input { flex: 1 1 240px; min-width: 0; font-family: Consolas, "Courier New", monospace; }
+
+.ticker-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.ticker-row label { flex: 0 1 240px; }
+
+button:disabled { opacity: 0.6; cursor: wait; }
+
+.status { margin: 8px 0 0; font-size: 0.9rem; white-space: pre-line; }
+.status:empty { display: none; }
+.status.ok { color: var(--under); }
+.status.warn { color: var(--fair); }
+.status.err { color: var(--over); }
+
+.legend { margin: 8px 0 16px; color: var(--muted); font-size: 0.85rem; }
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--primary);
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+input.autofilled {
+  border: 2px solid var(--primary);
+  padding: 9px 11px;
+}
+
 .summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

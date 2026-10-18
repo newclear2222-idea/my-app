@@ -1,10 +1,28 @@
 # my-app
 
-미국 주식 적정가 분석 웹사이트 (1단계: HTML/CSS/JavaScript만 사용, 서버 불필요)
+미국 주식 적정가 분석 웹사이트 (HTML/CSS/JavaScript만 사용, 서버 불필요)
 
 ## 실행 방법
 
 `index.html` 파일을 브라우저로 열면 바로 동작합니다. (탐색기에서 더블클릭)
+
+## 데이터 자동 불러오기 (선택)
+
+1. [Financial Modeling Prep](https://site.financialmodelingprep.com/developer/docs)에서 무료 API 키를 발급받습니다.
+2. 사이트의 **API 키 설정**에 키를 붙여넣고 **저장**을 누릅니다.
+   키는 이 브라우저의 localStorage에만 저장되며 코드나 GitHub에는 들어가지 않습니다.
+3. 티커(예: AAPL)를 입력하고 **불러오기**를 누르면(또는 Enter) 입력칸이 채워집니다.
+   자동으로 채운 칸은 파란 테두리로 표시되며, 직접 수정할 수 있습니다.
+
+| 입력칸 | 가져오는 곳 |
+| --- | --- |
+| 현재 주가 | `quote` |
+| EPS, BPS, 주당 FCF | `ratios-ttm` (최근 12개월) |
+| 예상 성장률 | `analyst-estimates` 연간 EPS 추정치로 계산한 최대 5년 연평균 성장률 |
+| 업종 평균 PER | `profile`의 업종/섹터 → `industry-pe-snapshot`, 없으면 `sector-pe-snapshot` |
+
+- 한 번 불러올 때 API를 약 5~10회 호출합니다. (무료 플랜은 하루 호출 수 제한이 있습니다)
+- 무료 플랜에서 제공되지 않는 항목은 비워 두고 안내 메시지를 보여주므로 직접 입력하면 됩니다.
 
 ## 계산 방법
 

@@ -210,9 +210,33 @@ form.addEventListener("submit", (e) => {
   render(inputs);
 });
 
+const loadStatusEl = document.getElementById("load-status");
+
+function setStatus(el, text, kind = "") {
+  el.textContent = text;
+  el.className = `status ${kind}`.trim();
+}
+
+function clearAutofill() {
+  for (const el of form.querySelectorAll("input.autofilled")) {
+    el.classList.remove("autofilled");
+    el.removeAttribute("title");
+  }
+}
+
 form.addEventListener("reset", () => {
   errorEl.textContent = "";
   resultsEl.classList.add("hidden");
+  setStatus(loadStatusEl, "");
+  clearAutofill();
+});
+
+// 자동으로 채운 칸을 직접 고치면 표시를 없앤다.
+form.addEventListener("input", (e) => {
+  if (e.target.classList.contains("autofilled")) {
+    e.target.classList.remove("autofilled");
+    e.target.removeAttribute("title");
+  }
 });
 
 document.getElementById("sample").addEventListener("click", () => {
@@ -221,5 +245,110 @@ document.getElementById("sample").addEventListener("click", () => {
     growth: 8, discount: 10, terminal: 2.5, "sector-per": 25,
   };
   for (const [id, v] of Object.entries(sample)) document.getElementById(id).value = v;
+  clearAutofill();
   errorEl.textContent = "";
+});
+
+// ----- API 키 설정 -----
+const keyInput = document.getElementById("api-key");
+const keyStatusEl = document.getElementById("key-status");
+
+function showKeyStatus() {
+  const key = ApiKeyStore.get();
+  if (key) {
+    setStatus(keyStatusEl, `저장된 키: ••••${key.slice(-4)} (이 브라우저에만 저장됨)`, "ok");
+  } else {
+    setStatus(keyStatusEl, "저장된 키가 없습니다. 키 없이도 값을 직접 입력해 계산할 수 있습니다.", "warn");
+  }
+}
+
+document.getElementById("key-save").addEventListener("click", () => {
+  const key = keyInput.value.trim();
+  if (!key) {
+    setStatus(keyStatusEl, "API 키를 입력해 주세요.", "err");
+    return;
+  }
+  if (!ApiKeyStore.set(key)) {
+    setStatus(keyStatusEl, "브라우저 저장소를 쓸 수 없습니다. 시크릿 창이거나 사이트 데이터 저장이 차단되어 있는지 확인해 주세요.", "err");
+    return;
+  }
+  keyInput.value = "";
+  showKeyStatus();
+});
+
+document.getElementById("key-clear").addEventListener("click", () => {
+  ApiKeyStore.clear();
+  keyInput.value = "";
+  showKeyStatus();
+});
+
+document.getElementById("key-toggle").addEventListener("click", (e) => {
+  const hidden = keyInput.type === "password";
+  keyInput.type = hidden ? "text" : "password";
+  e.target.textContent = hidden ? "숨기기" : "보기";
+});
+
+showKeyStatus();
+
+// ----- 불러오기 -----
+const FIELD_IDS = {
+  price: "price", eps: "eps", bps: "bps", fcf: "fcf", growth: "growth", sectorPer: "sector-per",
+};
+const loadBtn = document.getElementById("load");
+const tickerInput = document.getElementById("ticker");
+
+async function loadTicker() {
+  const ticker = tickerInput.value.trim().toUpperCase();
+  tickerInput.value = ticker;
+  if (!ticker) {
+    setStatus(loadStatusEl, "티커를 입력해 주세요. (예: AAPL)", "err");
+    return;
+  }
+  if (!/^[A-Z][A-Z0-9.\-]{0,9}$/.test(ticker)) {
+    setStatus(loadStatusEl, "티커 형식이 올바르지 않습니다. 영문 티커를 입력해 주세요. (예: AAPL, BRK.B)", "err");
+    return;
+  }
+  const apiKey = ApiKeyStore.get();
+  if (!apiKey) {
+    setStatus(loadStatusEl, "먼저 위의 'API 키 설정'에서 API 키를 저장해 주세요.", "err");
+    return;
+  }
+
+  loadBtn.disabled = true;
+  loadBtn.textContent = "불러오는 중…";
+  setStatus(loadStatusEl, `${ticker} 데이터를 불러오는 중입니다…`);
+  try {
+    const { values, sources, warnings } = await fetchFundamentals(ticker, apiKey);
+    clearAutofill();
+    for (const [key, v] of Object.entries(values)) {
+      const el = document.getElementById(FIELD_IDS[key]);
+      el.value = Math.round(v * 100) / 100;
+      el.classList.add("autofilled");
+      el.title = `자동 입력: ${sources[key]}`;
+    }
+    const filled = Object.keys(values).length;
+    let text = `${ticker}: ${filled}개 항목을 채웠습니다. 칸에 마우스를 올리면 출처가 보입니다.`;
+    if (warnings.length) text += "\n직접 입력이 필요한 항목:\n· " + warnings.join("\n· ");
+    setStatus(loadStatusEl, text, warnings.length ? "warn" : "ok");
+
+    const inputs = readInputs();
+    if (!validate(inputs)) {
+      errorEl.textContent = "";
+      render(inputs);
+    }
+  } catch (e) {
+    const message = e instanceof FmpError ? e.message : FMP_MESSAGES.unknown;
+    setStatus(loadStatusEl, message, "err");
+  } finally {
+    loadBtn.disabled = false;
+    loadBtn.textContent = "불러오기";
+  }
+}
+
+loadBtn.addEventListener("click", loadTicker);
+tickerInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    loadTicker();
+  }
 });
