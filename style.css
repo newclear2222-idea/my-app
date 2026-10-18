@@ -188,8 +188,14 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .per-sub { font-size: 0.8rem; color: var(--muted); }
 .per-sub:empty { display: none; }
 
+.per-panel h3 { margin: 0 0 10px; font-size: 1rem; }
+.per-panel h3:not(:first-child) { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
 .per-compare { margin: 12px 0 0; font-weight: 600; white-space: pre-line; }
 .per-compare:empty { display: none; }
+
+.per-meta { margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); white-space: pre-line; }
+.per-meta:empty { display: none; }
 
 .peer-note { font-weight: 400; font-size: 0.8rem; color: var(--muted); }
 .peer-note:empty { display: none; }

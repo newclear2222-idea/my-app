@@ -103,6 +103,18 @@ async function fetchFinnhub(ticker, apiKey, onWait) {
   };
 }
 
+// 애널리스트 컨센서스 목표주가. 반환: { value, analysts, updated } 또는 null
+async function fetchFinnhubTarget(ticker, apiKey, onWait) {
+  const t = await finnhubGet("stock/price-target", { symbol: ticker }, apiKey, { cache: true, onWait });
+  const value = pickNumber(t, ["targetMean", "targetMedian"]);
+  if (!(value > 0)) return null;
+  return {
+    value,
+    analysts: pickNumber(t, ["numberAnalysts", "numberOfAnalysts"]),
+    updated: t && typeof t.lastUpdated === "string" ? t.lastUpdated.slice(0, 10) : null,
+  };
+}
+
 function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);

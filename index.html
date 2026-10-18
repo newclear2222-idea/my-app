@@ -92,18 +92,22 @@
             <input type="number" id="sector-per" step="any" placeholder="예: 25" required>
             <span class="peer-note" id="sector-per-note"></span>
           </label>
+          <label>내년 예상 EPS ($) <span class="hint">애널리스트 평균</span>
+            <input type="number" id="forward-eps" step="any" placeholder="예: 8.2">
+            <span class="peer-note" id="forward-eps-note"></span>
+          </label>
+          <label>애널리스트 목표주가 ($) <span class="hint">컨센서스</span>
+            <input type="number" id="target-price" step="any" placeholder="예: 220">
+            <span class="peer-note" id="target-price-note"></span>
+          </label>
         </div>
         <div class="per-panel" aria-live="polite">
+          <h3>PER 비교</h3>
           <div class="per-stats">
             <div>
               <span class="label">현재 PER <span class="hint">주가 ÷ EPS(TTM)</span></span>
               <span class="value" id="per-current">-</span>
               <span class="per-sub" id="per-current-sub"></span>
-            </div>
-            <div>
-              <span class="label">선행 PER <span class="hint">주가 ÷ 내년 예상 EPS</span></span>
-              <span class="value" id="per-forward">-</span>
-              <span class="per-sub" id="per-forward-sub"></span>
             </div>
             <div>
               <span class="label">업종(경쟁사) PER</span>
@@ -112,6 +116,22 @@
             </div>
           </div>
           <p class="per-compare" id="per-compare"></p>
+
+          <h3>선행 PER 비교</h3>
+          <div class="per-stats">
+            <div>
+              <span class="label">애널리스트 기준 선행 PER <span class="hint">목표주가 ÷ 내년 예상 EPS</span></span>
+              <span class="value" id="per-fwd-target">-</span>
+              <span class="per-sub" id="per-fwd-target-sub"></span>
+            </div>
+            <div>
+              <span class="label">현재 주가 기준 선행 PER <span class="hint">현재 주가 ÷ 내년 예상 EPS</span></span>
+              <span class="value" id="per-fwd-price">-</span>
+              <span class="per-sub" id="per-fwd-price-sub"></span>
+            </div>
+          </div>
+          <p class="per-compare" id="fwd-compare"></p>
+          <p class="per-meta" id="fwd-meta"></p>
         </div>
         <p id="error" class="error" role="alert"></p>
         <div class="buttons">

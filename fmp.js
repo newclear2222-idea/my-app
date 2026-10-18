@@ -38,6 +38,13 @@ function growthFromEstimates(estimates, ttmEps) {
   return { growth: Math.round(cagr * 10) / 10, years: target.years };
 }
 
+// 애널리스트 컨센서스 목표주가. 반환: { value, analysts } 또는 null
+async function fetchFmpTarget(ticker, apiKey) {
+  const t = firstItem(await fmpGet("price-target-consensus", { symbol: ticker }, apiKey));
+  const value = pickNumber(t, ["targetConsensus", "targetMedian"]);
+  return value > 0 ? { value, analysts: null } : null;
+}
+
 // 반환: { fields: { 필드: { value, detail } }, estimates, warnings }
 // 키 오류·한도 초과·시세 조회 실패는 ApiError로 던진다(그러면 Finnhub로 넘어간다).
 // 업종 PER은 FMP 섹터 평균 대신 Finnhub 경쟁사 중간값을 쓴다(finnhub.js).

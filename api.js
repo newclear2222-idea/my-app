@@ -92,14 +92,17 @@ function pickForwardEstimate(rows) {
   };
 }
 
-const FETCHED_FIELDS =["price", "eps", "bps", "fcf", "growth", "sectorPer"];
+const FETCHED_FIELDS = ["price", "eps", "bps", "fcf", "growth", "sectorPer", "forwardEps", "targetPrice"];
 const FINNHUB_FIELDS = ["price", "eps", "bps", "fcf"];
 
-// 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록,
-//       forward = 내년 예상 EPS { eps, date, analysts, provider } 또는 null
+// 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록
 // onWait(초): Finnhub 분당 한도 때문에 기다리는 중, onProgress(완료, 전체): 경쟁사 PER 진행 상황
 async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
-  const keys = { fmp: ApiKeyStore.get("fmp"), finnhub: ApiKeyStore.get("finnhub") };
+  const keys = {
+    fmp: ApiKeyStore.get("fmp"),
+    finnhub: ApiKeyStore.get("finnhub"),
+    alphavantage: ApiKeyStore.get("alphavantage"),
+  };
   const values = {};
   const sources = {};
   const warnings = [];
@@ -182,6 +185,10 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
     throw new ApiError(errors[0].provider, errors[0].code, errors.map((e) => e.message).join("\n") + hint);
   }
 
+  // 선행 PER 비교용: 내년 예상 EPS와 애널리스트 목표주가
+  await fillForwardEps(ticker, keys, estimates, values, sources, warnings);
+  await fillTargetPrice(ticker, keys, onWait, values, sources, warnings);
+
   for (const e of errors) {
     const filledBy = e.provider === "fmp" && keys.finnhub ? " 가능한 항목은 Finnhub로 채웠습니다." : "";
     warnings.unshift(`${e.message}${filledBy}`);
@@ -191,31 +198,70 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
       warnings.push(`${FIELD_NAMES[f]}: 가져오지 못했습니다. 직접 입력해 주세요.`);
     }
   }
-  // 내년 예상 EPS(선행 PER용): FMP 애널리스트 추정치 → 없으면 Alpha Vantage 컨센서스
-  let forward = null;
-  const fmpForward = pickForwardEstimate(fmpEstimateRows(estimates));
-  if (fmpForward) forward = { ...fmpForward, provider: "fmp" };
-  if (!forward && values.price !== undefined) {
-    const avKey = ApiKeyStore.get("alphavantage");
-    if (!avKey) {
-      warnings.push("내년 예상 EPS: Alpha Vantage API 키를 저장하면 애널리스트 컨센서스로 선행 PER을 보여줍니다.");
-    } else {
-      try {
-        const avForward = pickForwardEstimate(await fetchAlphaVantageEstimates(ticker, avKey));
-        if (avForward) {
-          forward = { ...avForward, provider: "alphavantage" };
-        } else {
-          warnings.push("내년 예상 EPS: Alpha Vantage에 이 종목의 애널리스트 추정치가 없습니다.");
-        }
-      } catch (e) {
-        if (!(e instanceof ApiError)) throw e;
-        warnings.push(`내년 예상 EPS: ${e.message}`);
-      }
+  return { values, sources, warnings };
+}
+
+function analystText(n) {
+  return Number.isFinite(n) && n > 0 ? `애널리스트 ${Math.round(n)}명` : "애널리스트 수 정보 없음";
+}
+
+// 내년 예상 EPS: FMP 애널리스트 추정치 → 없으면 Alpha Vantage 컨센서스
+async function fillForwardEps(ticker, keys, estimates, values, sources, warnings) {
+  let forward = pickForwardEstimate(fmpEstimateRows(estimates));
+  let provider = "fmp";
+  if (!forward) {
+    provider = "alphavantage";
+    if (!keys.alphavantage) {
+      warnings.push("내년 예상 EPS: Alpha Vantage API 키를 저장하면 애널리스트 컨센서스로 가져옵니다. 직접 입력 필요");
+      return;
+    }
+    try {
+      forward = pickForwardEstimate(await fetchAlphaVantageEstimates(ticker, keys.alphavantage));
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e;
+      warnings.push(`내년 예상 EPS: ${e.message} 직접 입력 필요`);
+      return;
+    }
+    if (!forward) {
+      warnings.push("내년 예상 EPS: 이 종목의 애널리스트 추정치를 찾지 못했습니다. 직접 입력 필요");
+      return;
     }
   }
-  return { values, sources, warnings, forward };
+  values.forwardEps = forward.eps;
+  sources.forwardEps = {
+    provider,
+    detail: `${analystText(forward.analysts)} 평균 · ${forward.date.slice(0, 4)}년 ${forward.date.slice(5, 7)}월 결산 회계연도`,
+  };
+}
+
+// 애널리스트 컨센서스 목표주가: Alpha Vantage OVERVIEW → FMP → Finnhub 순서로 시도한다.
+async function fillTargetPrice(ticker, keys, onWait, values, sources, warnings) {
+  const tries = [];
+  if (keys.alphavantage) tries.push(["alphavantage", () => fetchAlphaVantageTarget(ticker, keys.alphavantage)]);
+  if (keys.fmp) tries.push(["fmp", () => fetchFmpTarget(ticker, keys.fmp)]);
+  if (keys.finnhub) tries.push(["finnhub", () => fetchFinnhubTarget(ticker, keys.finnhub, onWait)]);
+
+  const reasons = [];
+  for (const [provider, run] of tries) {
+    try {
+      const t = await run();
+      if (t && t.value > 0) {
+        values.targetPrice = t.value;
+        const updated = t.updated ? ` · ${t.updated} 업데이트` : "";
+        sources.targetPrice = { provider, detail: `${analystText(t.analysts)} · 향후 12개월 목표가${updated}` };
+        return;
+      }
+      reasons.push(`${API_PROVIDERS[provider].label}에 목표주가가 없습니다.`);
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e;
+      reasons.push(e.message);
+    }
+  }
+  const why = reasons.length ? reasons.join(" / ") : "목표주가를 가져올 API 키가 없습니다.";
+  warnings.push(`목표주가: ${why} 직접 입력 필요`);
 }
 
 const FIELD_NAMES = {
   price: "현재 주가", eps: "EPS", bps: "BPS", fcf: "주당 FCF", growth: "성장률", sectorPer: "업종 평균 PER",
+  forwardEps: "내년 예상 EPS", targetPrice: "목표주가",
 };
