@@ -1,0 +1,186 @@
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --text: #1f2933;
+  --muted: #616e7c;
+  --border: #d9e2ec;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --under: #15803d;
+  --under-bg: #dcfce7;
+  --fair: #a16207;
+  --fair-bg: #fef9c3;
+  --over: #b91c1c;
+  --over-bg: #fee2e2;
+  --na: #616e7c;
+  --na-bg: #e4e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111827;
+    --card: #1f2937;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --border: #374151;
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --under: #4ade80;
+    --under-bg: #14532d;
+    --fair: #facc15;
+    --fair-bg: #422006;
+    --over: #f87171;
+    --over-bg: #450a0a;
+    --na: #9ca3af;
+    --na-bg: #374151;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+header, main, footer {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+header { padding-top: 32px; }
+h1 { margin: 0 0 4px; font-size: 1.75rem; }
+h2 { margin: 0 0 16px; font-size: 1.25rem; }
+.subtitle { margin: 0 0 24px; color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.hidden { display: none; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.hint { font-weight: 400; color: var(--muted); font-size: 0.85rem; }
+
+input {
+  padding: 10px 12px;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+input:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+
+button {
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover { background: var(--primary-hover); }
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+button.secondary:hover { background: var(--bg); }
+
+.error { color: var(--over); margin: 12px 0 0; min-height: 1.2em; }
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.summary > div {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label { color: var(--muted); font-size: 0.85rem; }
+.value { font-size: 1.4rem; font-weight: 700; }
+
+.badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 12px;
+  border-radius: 999px;
+  font-size: 1.1rem;
+}
+
+.badge.under { color: var(--under); background: var(--under-bg); }
+.badge.fair  { color: var(--fair);  background: var(--fair-bg); }
+.badge.over  { color: var(--over);  background: var(--over-bg); }
+.badge.na    { color: var(--na);    background: var(--na-bg); }
+
+.note { color: var(--muted); font-size: 0.9rem; margin: 12px 0 24px; }
+
+.methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.method {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.method h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.method .result { font-size: 1.3rem; font-weight: 700; margin: 0 0 4px; }
+.method .gap { margin: 0 0 8px; font-size: 0.95rem; }
+.method .formula {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.85rem;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 6px;
+  margin: 0 0 8px;
+  word-break: break-word;
+}
+.method .explain { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+footer {
+  padding-bottom: 40px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}

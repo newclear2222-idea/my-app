@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>미국 주식 적정가 분석</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>미국 주식 적정가 분석</h1>
+    <p class="subtitle">4가지 방법으로 적정 주가를 계산하고 현재가와 비교합니다. (단위: $)</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>입력</h2>
+      <form id="valuation-form" novalidate>
+        <div class="grid">
+          <label>티커
+            <input type="text" id="ticker" placeholder="예: AAPL" autocomplete="off">
+          </label>
+          <label>현재 주가 ($)
+            <input type="number" id="price" step="any" placeholder="예: 180" required>
+          </label>
+          <label>EPS ($) <span class="hint">주당순이익</span>
+            <input type="number" id="eps" step="any" placeholder="예: 6.5" required>
+          </label>
+          <label>BPS ($) <span class="hint">주당순자산</span>
+            <input type="number" id="bps" step="any" placeholder="예: 4.4">
+          </label>
+          <label>주당 FCF ($) <span class="hint">주당 잉여현금흐름</span>
+            <input type="number" id="fcf" step="any" placeholder="예: 7.0" required>
+          </label>
+          <label>예상 성장률 (5년, %)
+            <input type="number" id="growth" step="any" placeholder="예: 8" required>
+          </label>
+          <label>할인율 (%)
+            <input type="number" id="discount" step="any" value="10" required>
+          </label>
+          <label>영구성장률 (%)
+            <input type="number" id="terminal" step="any" value="2.5" required>
+          </label>
+          <label>업종 평균 PER (배)
+            <input type="number" id="sector-per" step="any" placeholder="예: 25" required>
+          </label>
+        </div>
+        <p id="error" class="error" role="alert"></p>
+        <div class="buttons">
+          <button type="submit">적정가 계산</button>
+          <button type="button" id="sample" class="secondary">예시 값 채우기</button>
+          <button type="reset" class="secondary">초기화</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="results" class="card hidden" aria-live="polite">
+      <h2 id="results-title">분석 결과</h2>
+
+      <div class="summary">
+        <div>
+          <span class="label">현재 주가</span>
+          <span class="value" id="sum-price">-</span>
+        </div>
+        <div>
+          <span class="label">평균 적정가</span>
+          <span class="value" id="sum-fair">-</span>
+        </div>
+        <div>
+          <span class="label">괴리율</span>
+          <span class="value" id="sum-gap">-</span>
+        </div>
+        <div>
+          <span class="label">판정</span>
+          <span class="value badge" id="sum-verdict">-</span>
+        </div>
+      </div>
+      <p class="note" id="sum-note"></p>
+
+      <div class="methods" id="methods"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>본 사이트의 계산 결과는 <strong>투자 판단 참고용이며 투자 권유가 아닙니다.</strong>
+      입력값과 가정에 따라 결과가 크게 달라질 수 있으며, 투자 결정과 그 결과에 대한 책임은 투자자 본인에게 있습니다.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
