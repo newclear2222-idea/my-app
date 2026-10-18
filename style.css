@@ -358,6 +358,9 @@ select {
 .news-title { margin: 4px 0; font-size: 1rem; line-height: 1.4; word-break: break-word; }
 .news-title a { text-decoration: none; }
 .news-title a:hover { text-decoration: underline; }
+.news-original { margin: 0 0 4px; font-size: 0.78rem; color: var(--muted); word-break: break-word; }
+.news-original:empty { display: none; }
+button[hidden] { display: none; }
 .news-summary { margin: 0 0 8px; font-size: 0.88rem; color: var(--muted); word-break: break-word; }
 .news-summary:empty { display: none; }
 .news-actions:empty { display: none; }
