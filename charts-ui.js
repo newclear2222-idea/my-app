@@ -4,42 +4,112 @@ const chartsStatusEl = document.getElementById("charts-status");
 const epsChartEl = document.getElementById("eps-chart");
 const epsStatusEl = document.getElementById("eps-status");
 const epsTableEl = document.getElementById("eps-table");
-const TV_SCRIPT = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+// tv.js 위젯은 지표(studies)에 기간 같은 입력값을 함께 넘길 수 있어 5·20·60·120·200일선을 각각 그릴 수 있다.
+const TV_SCRIPT = "https://s3.tradingview.com/tv.js";
 const SVG_NS = "http://www.w3.org/2000/svg";
-const TV_HEIGHT = 420;
+const TV_HEIGHT = 440;
+const TV_HEIGHT_WITH_RSI = 560; // RSI는 아래에 따로 창이 생기므로 높이를 늘린다
+const TA_PREF_KEY = "taPrefs";
+const TA_RANGES = ["1M", "3M", "6M", "12M", "60M"];
+const MA_PERIODS = [5, 20, 60, 120, 200];
 
 let chartTicker = "";
 let epsRows = [];
+let tvScriptPromise = null;
+let tvWidgetSeq = 0;
 
 const prefersDark = () => window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-// TradingView 위젯은 스크립트 태그 안의 JSON 설정을 읽어 차트를 iframe으로 그린다. 키가 필요 없다.
-function showPriceChart(ticker) {
+// ----- 지표 체크박스 (TradingView 위젯 studies 옵션에 연결, 선택은 브라우저에 저장) -----
+function readTaPrefs() {
+  const defaults = { ma5: false, ma20: true, ma60: true, ma120: false, ma200: true, bb: false, rsi: false, range: "12M" };
+  try {
+    const saved = { ...defaults, ...JSON.parse(localStorage.getItem(TA_PREF_KEY) || "{}") };
+    if (!TA_RANGES.includes(saved.range)) saved.range = defaults.range; // 예전 설정값("1Y" 등) 정리
+    return saved;
+  } catch { return defaults; }
+}
+
+const taPrefs = readTaPrefs();
+const taRangeSelect = document.getElementById("ta-range");
+
+function saveTaPrefs() {
+  try { localStorage.setItem(TA_PREF_KEY, JSON.stringify(taPrefs)); } catch { /* 저장소 사용 불가 */ }
+}
+
+for (const input of document.querySelectorAll("[data-ta]")) {
+  input.checked = Boolean(taPrefs[input.dataset.ta]);
+  input.addEventListener("change", () => {
+    taPrefs[input.dataset.ta] = input.checked;
+    saveTaPrefs();
+    if (chartTicker) showPriceChart(chartTicker);
+  });
+}
+taRangeSelect.value = taPrefs.range;
+taRangeSelect.addEventListener("change", () => {
+  taPrefs.range = taRangeSelect.value;
+  saveTaPrefs();
+  if (chartTicker) showPriceChart(chartTicker);
+});
+
+function tvStudies() {
+  const studies = MA_PERIODS
+    .filter((p) => taPrefs[`ma${p}`])
+    .map((p) => ({ id: "MASimple@tv-basicstudies", inputs: { length: p } }));
+  if (taPrefs.bb) studies.push({ id: "BB@tv-basicstudies", inputs: { length: 20, mult: 2 } });
+  if (taPrefs.rsi) studies.push({ id: "RSI@tv-basicstudies", inputs: { length: 14 } });
+  return studies;
+}
+
+function loadTvScript() {
+  if (window.TradingView) return Promise.resolve();
+  if (!tvScriptPromise) {
+    tvScriptPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = TV_SCRIPT;
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = () => { tvScriptPromise = null; reject(new Error("tv.js")); };
+      document.head.appendChild(s);
+    });
+  }
+  return tvScriptPromise;
+}
+
+// 체크박스·기간을 바꿀 때마다 위젯을 새로 그린다. 키가 필요 없다.
+async function showPriceChart(ticker) {
+  chartTicker = ticker;
+  try {
+    await loadTvScript();
+  } catch {
+    setStatus(chartsStatusEl, "주가 차트(TradingView)를 불러오지 못했습니다. 인터넷 연결이나 광고 차단 확장 프로그램을 확인해 주세요.", "err");
+    return;
+  }
+  const height = taPrefs.rsi ? TV_HEIGHT_WITH_RSI : TV_HEIGHT;
   tvContainer.innerHTML = "";
-  const widget = document.createElement("div");
-  widget.className = "tradingview-widget-container__widget";
-  widget.style.height = "100%";
-  const script = document.createElement("script");
-  script.src = TV_SCRIPT;
-  script.async = true;
-  // autosize는 iframe이 150px로 쪼그라드는 경우가 있어 높이를 직접 정한다(.tv-chart 높이와 맞춤).
-  script.textContent = JSON.stringify({
+  tvContainer.style.height = `${height}px`;
+  const inner = document.createElement("div");
+  inner.id = `tv-chart-${++tvWidgetSeq}`;
+  inner.style.height = "100%";
+  tvContainer.appendChild(inner);
+  // eslint-disable-next-line no-new
+  new TradingView.widget({
+    container_id: inner.id,
     width: "100%",
-    height: TV_HEIGHT,
+    height,
     symbol: ticker,
+    // range 옵션은 기간에 맞춰 봉 단위를 바꿔 버린다(6개월→2시간봉, 5년→주봉). 그러면 "200일선"이
+    // "200봉선"이 되므로, 일봉을 고정하고 보이는 기간만 바꾸는 timeframe 옵션을 쓴다.
     interval: "D",
-    range: "12M",
+    timeframe: taPrefs.range,
     timezone: "Asia/Seoul",
     theme: prefersDark() ? "dark" : "light",
     style: "1",
     locale: "kr",
     allow_symbol_change: false,
     hide_side_toolbar: true,
-    calendar: false,
-    support_host: "https://www.tradingview.com",
+    studies: tvStudies(),
   });
-  script.onerror = () => setStatus(chartsStatusEl, "주가 차트(TradingView)를 불러오지 못했습니다. 인터넷 연결이나 광고 차단 확장 프로그램을 확인해 주세요.", "err");
-  tvContainer.append(widget, script);
 }
 
 // ----- EPS 실제 vs 예상 (세로 막대 + 예상치 눈금) -----
@@ -211,7 +281,6 @@ function loadCharts(ticker) {
   chartTicker = ticker;
   setStatus(chartsStatusEl, "");
   showPriceChart(ticker);
-  loadTaChart(ticker);
   loadEpsChart(ticker);
 }
 

@@ -44,99 +44,13 @@ async function fetchAlphaVantageEstimates(ticker, apiKey) {
     }));
 }
 
-// ----- 일별 주가 (이동평균선·볼린저밴드 차트용) -----
-// 하루 25회 한도를 아끼려고 종목별로 하루 한 번만 받아 브라우저에 저장한다(최근 DAILY_KEEP 거래일만).
-const DAILY_CACHE_PREFIX = "avDaily:";
-const DAILY_KEEP = 800;
-// 무료 일봉은 액면분할이 반영되지 않은 가격이라, 하룻밤 사이 정수배(2·3·4·5·10배 등)로 뛴 날을 분할로 보고 이전 가격을 맞춘다.
-const SPLIT_RATIOS = [2, 3, 4, 5, 6, 8, 10, 15, 20, 25, 30, 40, 50];
-const SPLIT_TOLERANCE = 0.04;
-
-function splitFactor(prevClose, open) {
-  if (!(prevClose > 0 && open > 0)) return 1;
-  const r = prevClose / open;
-  for (const n of SPLIT_RATIOS) {
-    if (Math.abs(r - n) / n < SPLIT_TOLERANCE) return n; // 분할: 이전 가격 ÷ n
-    if (Math.abs(1 / r - n) / n < SPLIT_TOLERANCE) return 1 / n; // 병합(역분할): 이전 가격 × n
+// 예전 버전이 저장해 둔 일봉 캐시(avDaily:종목)는 더 쓰지 않으므로 지워서 저장 공간을 비운다.
+try {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith("avDaily:")) localStorage.removeItem(k);
   }
-  return 1;
-}
-
-// 오래된 날부터 [{ date, open, high, low, close, volume }]. splits = 찾아서 맞춘 분할 목록
-function adjustSplits(rows) {
-  const out = rows.map((r) => ({ ...r }));
-  const splits = [];
-  for (let i = out.length - 1; i > 0; i--) {
-    const f = splitFactor(out[i - 1].close, out[i].open);
-    if (f === 1) continue;
-    splits.push({ date: out[i].date, factor: f });
-    for (let j = 0; j < i; j++) {
-      out[j].open /= f; out[j].high /= f; out[j].low /= f; out[j].close /= f; out[j].volume *= f;
-    }
-  }
-  return { rows: out, splits };
-}
-
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-}
-
-// 반환: { rows, splits, full } — full이 false면 최근 100거래일만 받은 것(200일선 등 긴 선은 못 그림)
-async function fetchDailySeries(ticker, apiKey) {
-  const cacheKey = DAILY_CACHE_PREFIX + ticker;
-  try {
-    const hit = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    if (hit && hit.day === todayKey()) return hit.data;
-  } catch { /* 저장소 사용 불가 */ }
-
-  const query = async (outputsize) => {
-    const url = new URL(ALPHAVANTAGE_BASE);
-    url.searchParams.set("function", "TIME_SERIES_DAILY");
-    url.searchParams.set("symbol", ticker);
-    url.searchParams.set("outputsize", outputsize);
-    url.searchParams.set("apikey", apiKey);
-    return apiGet("alphavantage", url, alphaVantageClassify);
-  };
-  let full = true;
-  let body;
-  try {
-    body = await query("full");
-  } catch (e) {
-    if (e.code !== "premium") throw e;
-    full = false;
-    body = await query("compact");
-  }
-  const series = body["Time Series (Daily)"];
-  if (!series || typeof series !== "object") throw new ApiError("alphavantage", "notfound", apiMessage("alphavantage", "notfound"));
-
-  const raw = Object.entries(series)
-    .map(([date, v]) => ({
-      date,
-      open: avNumber(v["1. open"]),
-      high: avNumber(v["2. high"]),
-      low: avNumber(v["3. low"]),
-      close: avNumber(v["4. close"]),
-      volume: avNumber(v["5. volume"]),
-    }))
-    .filter((r) => Number.isFinite(r.close) && r.close > 0)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-DAILY_KEEP);
-  const { rows, splits } = adjustSplits(raw);
-  const data = { rows, splits, full };
-  try {
-    // 다른 종목의 지난 캐시는 지워서 저장 공간을 아낀다.
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(DAILY_CACHE_PREFIX) && k !== cacheKey) {
-        const v = JSON.parse(localStorage.getItem(k) || "null");
-        if (!v || v.day !== todayKey()) localStorage.removeItem(k);
-      }
-    }
-    localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey(), data }));
-  } catch { /* 저장 공간 부족 등: 이번에만 쓰고 저장하지 않는다 */ }
-  return data;
-}
+} catch { /* 저장소 사용 불가 */ }
 
 // OVERVIEW의 AnalystTargetPrice. 애널리스트 수는 투자의견(강력매수~강력매도) 수의 합으로 본다.
 // 반환: { value, analysts } 또는 null

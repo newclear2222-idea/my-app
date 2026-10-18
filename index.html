@@ -164,36 +164,31 @@
       <h2>그래프 <span class="hint">무료</span></h2>
       <p class="note-inline">티커를 불러오면 그 종목의 그래프가 나옵니다.</p>
 
-      <h3 class="chart-title">주가 차트 <span class="hint">TradingView · 키 불필요</span></h3>
-      <div id="tv-chart" class="tv-chart tradingview-widget-container">
-        <p class="note chart-empty">티커를 불러오면 최근 1년 일봉 차트가 나옵니다. 차트 안에서 기간·지표를 바꿀 수 있습니다.</p>
-      </div>
-      <p id="charts-status" class="status" role="status"></p>
-
-      <h3 class="chart-title">이동평균선 · 볼린저밴드 · RSI <span class="hint">Alpha Vantage 일봉으로 직접 계산 · 장 마감 기준</span></h3>
+      <h3 class="chart-title">주가 차트 <span class="hint">TradingView · 키 불필요 · 지표는 체크하면 차트에 바로 들어갑니다</span></h3>
       <div class="ta-controls">
         <span class="ta-group">이동평균</span>
-        <label class="check"><input type="checkbox" data-ta="ma5"><span class="tip-sw ma5"></span>5일</label>
-        <label class="check"><input type="checkbox" data-ta="ma20"><span class="tip-sw ma20"></span>20일</label>
-        <label class="check"><input type="checkbox" data-ta="ma60"><span class="tip-sw ma60"></span>60일</label>
-        <label class="check"><input type="checkbox" data-ta="ma120"><span class="tip-sw ma120"></span>120일</label>
-        <label class="check"><input type="checkbox" data-ta="ma200"><span class="tip-sw ma200"></span>200일</label>
+        <label class="check"><input type="checkbox" data-ta="ma5">5일</label>
+        <label class="check"><input type="checkbox" data-ta="ma20">20일</label>
+        <label class="check"><input type="checkbox" data-ta="ma60">60일</label>
+        <label class="check"><input type="checkbox" data-ta="ma120">120일</label>
+        <label class="check"><input type="checkbox" data-ta="ma200">200일</label>
         <span class="ta-group">보조지표</span>
-        <label class="check"><input type="checkbox" data-ta="bb"><span class="tip-sw bb"></span>볼린저밴드(20, 2)</label>
+        <label class="check"><input type="checkbox" data-ta="bb">볼린저밴드(20, 2)</label>
         <label class="check"><input type="checkbox" data-ta="rsi">RSI(14)</label>
         <label class="inline">기간
           <select id="ta-range">
+            <option value="1M">1개월</option>
             <option value="3M">3개월</option>
             <option value="6M">6개월</option>
-            <option value="1Y" selected>1년</option>
-            <option value="2Y">2년</option>
+            <option value="12M" selected>1년</option>
+            <option value="60M">5년</option>
           </select>
         </label>
       </div>
-      <p id="ta-status" class="status" role="status"></p>
-      <div id="ta-chart" class="ta-chart"></div>
-      <div id="ta-rsi" class="ta-chart"></div>
-      <div id="ta-summary"></div>
+      <div id="tv-chart" class="tv-chart">
+        <p class="note chart-empty">티커를 불러오면 일봉 차트가 나옵니다. 위에서 고른 지표가 함께 표시되고, 차트 안에서도 기간·지표를 바꿀 수 있습니다.</p>
+      </div>
+      <p id="charts-status" class="status" role="status"></p>
 
       <h3 class="chart-title">분기 EPS: 실제 vs 예상 <span class="hint">Finnhub</span></h3>
       <div class="chart-legend" aria-hidden="true">
@@ -295,7 +290,6 @@
   <script src="translate.js"></script>
   <script src="news-ui.js"></script>
   <script src="charts-ui.js"></script>
-  <script src="ta-chart.js"></script>
   <script src="market.js"></script>
   <script src="refresh.js"></script>
 </body>
