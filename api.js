@@ -95,7 +95,8 @@ function pickForwardEstimate(rows) {
 const FETCHED_FIELDS = ["price", "eps", "bps", "fcf", "growth", "sectorPer", "forwardEps", "targetPrice"];
 const FINNHUB_FIELDS = ["price", "eps", "bps", "fcf"];
 
-// 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록
+// 결과: values[필드] = 숫자, sources[필드] = { provider, detail, note? }, warnings = 안내 문구 목록,
+//       shares = 주식 수 { value, provider } 또는 null
 // onWait(초): Finnhub 분당 한도 때문에 기다리는 중, onProgress(완료, 전체): 경쟁사 PER 진행 상황
 async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
   const keys = {
@@ -108,6 +109,7 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
   const warnings = [];
   const errors = [];
   let estimates = null;
+  let shares = null;
 
   const take = (provider, partial) => {
     for (const [field, { value, detail }] of Object.entries(partial)) {
@@ -123,6 +125,7 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
       const fmp = await fetchFmp(ticker, keys.fmp);
       take("fmp", fmp.fields);
       estimates = fmp.estimates;
+      if (fmp.shares > 0) shares = { value: fmp.shares, provider: "fmp" };
       warnings.push(...fmp.warnings);
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
@@ -189,6 +192,17 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
   await fillForwardEps(ticker, keys, estimates, values, sources, warnings);
   await fillTargetPrice(ticker, keys, onWait, values, sources, warnings);
 
+  // 주식 수: FMP에서 못 받았으면 Finnhub 시가총액(백만 달러) ÷ 주가. 재무 데이터는 캐시돼 있어 추가 호출이 거의 없다.
+  if (!shares && keys.finnhub) {
+    try {
+      const m = await finnhubMetric(ticker, keys.finnhub, onWait);
+      const cap = pickNumber(m, ["marketCapitalization"]);
+      if (cap > 0) shares = { value: (cap * 1e6) / values.price, provider: "finnhub" };
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e;
+    }
+  }
+
   for (const e of errors) {
     const filledBy = e.provider === "fmp" && keys.finnhub ? " 가능한 항목은 Finnhub로 채웠습니다." : "";
     warnings.unshift(`${e.message}${filledBy}`);
@@ -198,7 +212,7 @@ async function fetchFundamentals(ticker, { onWait, onProgress } = {}) {
       warnings.push(`${FIELD_NAMES[f]}: 가져오지 못했습니다. 직접 입력해 주세요.`);
     }
   }
-  return { values, sources, warnings };
+  return { values, sources, warnings, shares };
 }
 
 function analystText(n) {

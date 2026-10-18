@@ -142,6 +142,27 @@
       </form>
     </section>
 
+    <section class="card" id="earnings-card">
+      <h2>실적발표 자료 분석 <span class="hint">무료 · 규칙 기반</span></h2>
+      <p class="note-inline">
+        실적발표 보도자료나 분석 글을 붙여넣으면 FCF·매출·EPS·성장률·가이던스 숫자를 찾아 줍니다.
+        원문과 비교해 확인한 뒤 <strong>적용</strong>을 누르면 입력칸에 들어갑니다. 글은 어디에도 저장·전송되지 않습니다.
+      </p>
+      <textarea id="earnings-text" rows="8" placeholder="예: 1분기 매출 87억 달러(전년 대비 +37%), 잉여현금흐름 4억 달러, 2분기 매출 가이던스 79억 달러 ± 2억 달러, EPS 1.43달러 …"></textarea>
+      <div class="earnings-row">
+        <label>주식 수 (백만 주) <span class="hint">회사 전체 금액 → 주당 값 계산용</span>
+          <input type="number" id="earnings-shares" step="any" placeholder="예: 1120">
+          <span class="peer-note" id="earnings-shares-note"></span>
+        </label>
+        <div class="buttons">
+          <button type="button" id="earnings-analyze">분석하기</button>
+          <button type="button" id="earnings-clear" class="secondary">지우기</button>
+        </div>
+      </div>
+      <p id="earnings-status" class="status" role="status"></p>
+      <div id="earnings-results"></div>
+    </section>
+
     <section id="results" class="card hidden" aria-live="polite">
       <h2 id="results-title">분석 결과</h2>
 
@@ -179,5 +200,7 @@
   <script src="finnhub.js"></script>
   <script src="alphavantage.js"></script>
   <script src="app.js"></script>
+  <script src="earnings.js"></script>
+  <script src="earnings-ui.js"></script>
 </body>
 </html>

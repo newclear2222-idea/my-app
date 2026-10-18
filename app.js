@@ -267,6 +267,16 @@ function clearAutofill() {
   for (const el of form.querySelectorAll("input.autofilled")) unmarkAutofill(el);
 }
 
+// 칸에 값을 넣고 파란 테두리와 [출처] 표시를 붙인다. (불러오기와 실적발표 자료 적용에서 함께 쓴다)
+function fillField(field, value, label, detail) {
+  const el = document.getElementById(FIELD_IDS[field]);
+  el.value = Math.round(value * 100) / 100;
+  el.classList.add("autofilled");
+  el.title = `자동 입력 (${label}): ${detail}`;
+  document.getElementById(`src-${el.id}`).textContent = `[${label}]`;
+  if (NOTE_FIELDS.includes(field)) setFieldNote(field, `[${label}] ${detail}`);
+}
+
 // ----- PER 비교 (현재 PER · 업종 PER) / 선행 PER 비교 (목표주가 기준 · 현재 주가 기준) -----
 function setPerStat(id, text, sub = "", na = false) {
   const el = document.getElementById(id);
@@ -380,6 +390,7 @@ form.addEventListener("reset", () => {
 form.addEventListener("input", (e) => {
   if (e.target.classList.contains("autofilled")) unmarkAutofill(e.target);
   updatePerPanel();
+  renderEarnings();
 });
 
 document.getElementById("sample").addEventListener("click", () => {
@@ -470,16 +481,11 @@ async function loadTicker() {
   const onProgress = (done, total) =>
     setStatus(loadStatusEl, `${ticker} 경쟁사 PER 불러오는 중… (${done}/${total})`);
   try {
-    const { values, sources, warnings } = await fetchFundamentals(ticker, { onWait, onProgress });
+    const { values, sources, warnings, shares } = await fetchFundamentals(ticker, { onWait, onProgress });
     for (const [key, v] of Object.entries(values)) {
-      const el = document.getElementById(FIELD_IDS[key]);
-      const src = sources[key];
-      const label = API_PROVIDERS[src.provider].label;
-      el.value = Math.round(v * 100) / 100;
-      el.classList.add("autofilled");
-      el.title = `자동 입력 (${label}): ${src.detail}`;
-      document.getElementById(`src-${el.id}`).textContent = `[${label}]`;
+      fillField(key, v, API_PROVIDERS[sources[key].provider].label, sources[key].detail);
     }
+    setEarningsShares(shares);
     for (const f of NOTE_FIELDS) {
       if (values[f] === undefined) {
         setFieldNote(f, "직접 입력 필요", true);

@@ -88,5 +88,9 @@ async function fetchFmp(ticker, apiKey) {
     warnings.push(`성장률(FMP 애널리스트 추정치): ${estimatesRes.reason.message}`);
   }
 
-  return { fields, estimates, warnings };
+  // 실적발표 자료의 회사 전체 금액을 주당 값으로 바꿀 때 쓰는 주식 수
+  const marketCap = pickNumber(quote, ["marketCap"]);
+  const shares = pickNumber(quote, ["sharesOutstanding"]) ?? (marketCap ? marketCap / price : null);
+
+  return { fields, estimates, warnings, shares };
 }
