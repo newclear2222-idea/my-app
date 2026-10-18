@@ -224,6 +224,32 @@
       <div id="earnings-results"></div>
     </section>
 
+    <section class="card" id="sec-card">
+      <h2>SEC 공시 <span class="hint">SEC EDGAR · 무료 · 키 불필요</span></h2>
+      <p class="note-inline">
+        티커를 불러오면 미국 증권거래위원회(SEC)에 낸 최근 공시가 나옵니다. 원문은 SEC 사이트에서 새 창으로 열립니다(영어).
+        실적발표 공시(8-K)의 <strong>첨부(보도자료)</strong>를 열어 본문을 복사한 뒤 <strong>실적발표 자료 분석</strong>에 붙여넣으면 숫자를 정리해 줍니다.
+      </p>
+      <div class="news-controls">
+        <label class="inline">보기
+          <select id="sec-view">
+            <option value="major" selected>주요 공시 (10-K·10-Q·8-K 등)</option>
+            <option value="earnings">실적발표 (8-K 2.02)</option>
+            <option value="insider">내부자 거래 (Form 4·144)</option>
+            <option value="ownership">대주주 지분 (13D·13G)</option>
+            <option value="all">전체</option>
+          </select>
+        </label>
+        <label class="inline">CIK
+          <input type="text" id="sec-cik" inputmode="numeric" placeholder="자동으로 찾음" autocomplete="off">
+        </label>
+        <button type="button" id="sec-cik-apply" class="secondary">CIK로 불러오기</button>
+      </div>
+      <p id="sec-status" class="status" role="status"></p>
+      <div id="sec-summary" class="sec-summary"></div>
+      <div id="sec-list"></div>
+    </section>
+
     <section class="card" id="news-card">
       <h2>관련 기사 <span class="hint">Finnhub · 무료</span></h2>
       <p class="note-inline">
@@ -287,6 +313,8 @@
   <script src="app.js"></script>
   <script src="earnings.js"></script>
   <script src="earnings-ui.js"></script>
+  <script src="sec.js"></script>
+  <script src="sec-ui.js"></script>
   <script src="translate.js"></script>
   <script src="news-ui.js"></script>
   <script src="charts-ui.js"></script>

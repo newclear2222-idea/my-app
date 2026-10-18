@@ -393,6 +393,15 @@ select {
   color: var(--text);
 }
 
+#sec-cik { width: 130px; padding: 8px 10px; font-size: 0.95rem; }
+.sec-summary ul { margin: 8px 0 12px; padding-left: 20px; font-size: 0.92rem; }
+.sec-summary li { margin: 3px 0; }
+.sec-summary:empty { display: none; }
+.sec-table td:first-child { white-space: nowrap; }
+.sec-table td:nth-child(2) { min-width: 120px; }
+.sec-links { white-space: nowrap; }
+.sec-links a + a { margin-left: 10px; }
+
 .news-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .news-list:empty { display: none; }
 .news-item {
