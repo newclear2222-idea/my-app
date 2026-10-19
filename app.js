@@ -410,15 +410,49 @@ for (const block of document.querySelectorAll(".key-block")) {
   const provider = block.dataset.provider;
   const keyInput = block.querySelector(".key-input");
   const keyStatusEl = block.querySelector(".key-status");
+  const copyBtn = block.querySelector(".key-copy");
+  const copiedFlag = `keyCopied:${provider}`;
+
+  const copyUsed = () => {
+    try { return localStorage.getItem(copiedFlag) === "1"; } catch { return true; }
+  };
 
   const showKeyStatus = () => {
     const key = ApiKeyStore.get(provider);
+    copyBtn.hidden = !key || copyUsed();
     if (key) {
       setStatus(keyStatusEl, `저장된 키: ••••${key.slice(-4)} (이 브라우저에만 저장됨)`, "ok");
     } else {
       setStatus(keyStatusEl, "저장된 키가 없습니다.", "warn");
     }
   };
+
+  // 다른 주소·기기로 옮길 때 쓰는 1회용 복사. 한 번 성공하면 이 브라우저에서는 다시 나오지 않는다.
+  copyBtn.addEventListener("click", async () => {
+    const key = ApiKeyStore.get(provider);
+    if (!key) return;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(key);
+      ok = true;
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = key;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand("copy"); } catch { ok = false; }
+      ta.remove();
+    }
+    if (!ok) {
+      setStatus(keyStatusEl, "복사하지 못했습니다. 브라우저가 클립보드 사용을 막았는지 확인해 주세요. 복사 버튼은 그대로 남겨 둡니다.", "err");
+      return;
+    }
+    try { localStorage.setItem(copiedFlag, "1"); } catch { /* 저장소 사용 불가 */ }
+    copyBtn.hidden = true;
+    setStatus(keyStatusEl, `키를 복사했습니다(••••${key.slice(-4)}). 메모장 등에 바로 붙여넣어 두세요. 복사 버튼은 이제 사라집니다.`, "ok");
+  });
 
   block.querySelector(".key-save").addEventListener("click", () => {
     const key = keyInput.value.trim();
